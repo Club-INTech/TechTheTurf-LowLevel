@@ -1,0 +1,24 @@
+#pragma once
+
+#include <hardware/pio.h>
+
+class Encoder
+{
+public:
+	Encoder(uint pin_ab, uint state_machine, PIO pio=pio0, int max_step_rate=0);
+	~Encoder();
+
+	int32_t getCount();
+	float convertRevolutions(int32_t ticks);
+	float getRevolutions();
+
+private:
+
+	void pioInit(int max_step_rate);
+	void pioCleanup();
+
+	PIO pio;
+
+	uint pinAB;
+	uint stateMachine;
+};
