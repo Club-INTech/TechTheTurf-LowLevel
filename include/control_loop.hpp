@@ -15,7 +15,7 @@ class ControlLoop
 public:
 	ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, Driver *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *lAlim, AccelLimiter *rAlim, Controller *ctrl);
+				AccelLimiter *lAlim, AccelLimiter *rAlim, Controller *ctrl, float encoderWheelRadius);
 	~ControlLoop();
 
 	void work();
@@ -47,4 +47,6 @@ private:
 	AccelLimiter *rAlim;
 
 	Controller *ctrl;
+
+	float encoderWheelRadius;
 };

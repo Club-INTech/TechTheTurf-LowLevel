@@ -5,7 +5,7 @@
 class Encoder
 {
 public:
-	Encoder(uint pin_ab, uint state_machine, PIO pio=pio0, int max_step_rate=0);
+	Encoder(uint pin_a, uint pin_b, bool reversed=false, uint state_machine=0, PIO pio=pio0, int max_step_rate=0);
 	~Encoder();
 
 	int32_t getCount();
@@ -19,6 +19,7 @@ private:
 
 	PIO pio;
 
+	bool reversed;
 	uint pinAB;
 	uint stateMachine;
 };

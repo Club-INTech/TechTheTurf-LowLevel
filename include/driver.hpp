@@ -6,7 +6,7 @@ class Driver
 {
 public:
 	// Must be on the base of a PWM slice
-	Driver(uint fin_rin, uint resolution = 2048, float freq = 40e3, float dutyOffset = 0.1);
+	Driver(uint fin, uint rin, bool reversed = false, uint resolution = 2048, float freq = 40e3, float dutyOffset = 0.1);
 	~Driver();
 	
 	// Frequency of PWM
@@ -24,6 +24,7 @@ private:
 
 	uint pins;
 	uint slice;
+	bool reversed;
 
 	bool running;
 	float currentDuty;

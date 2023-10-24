@@ -2,12 +2,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#define WHEEL_RADIUS (68.0f/2.0f)
-
-
 ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, Driver *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *lAlim, AccelLimiter *rAlim, Controller *ctrl) {
+				AccelLimiter *lAlim, AccelLimiter *rAlim, Controller *ctrl, float encoderWheelRadius) {
 	this->encLeft = encLeft;
 	this->encRight = encRight;
 	this->drvLeft = drvLeft;
@@ -24,8 +21,10 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->rAlim = rAlim;
 	this->ctrl = ctrl;
 
-	this->lSpeedPid->setClamp(-1.0f, 1.0f);
-	this->rSpeedPid->setClamp(-1.0f, 1.0f);
+	this->encoderWheelRadius = encoderWheelRadius;
+
+	this->lSpeedPid->setClamp(-0.7f, 0.7f);
+	this->rSpeedPid->setClamp(-0.7f, 0.7f);
 
 	this->lastTime = get_absolute_time();
 	this->lastTimePos = this->lastTime;
@@ -55,15 +54,15 @@ void ControlLoop::work() {
 	int32_t rCnt = this->encRight->getCount();
 
 	// Calc. delta dist from counts
-	float lDetaDst = this->encLeft->convertRevolutions(lCnt - this->lastCountLeft) * 2.0f * M_PI * WHEEL_RADIUS;
-	float rDetaDst = this->encRight->convertRevolutions(rCnt - this->lastCountRight) * 2.0f * M_PI * WHEEL_RADIUS;
+	float lDetaDst = this->encLeft->convertRevolutions(lCnt - this->lastCountLeft) * 2.0f * M_PI * this->encoderWheelRadius;
+	float rDetaDst = this->encRight->convertRevolutions(rCnt - this->lastCountRight) * 2.0f * M_PI * this->encoderWheelRadius;
 
 	this->lPll->update(lCnt - this->lastCountLeft, dt);
 	this->rPll->update(rCnt - this->lastCountRight, dt);
 
 	// Estimate current speed
-	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * WHEEL_RADIUS;
-	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * WHEEL_RADIUS;
+	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
+	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
 
 	// Update last counts
 	this->lastCountLeft = lCnt;

@@ -16,9 +16,18 @@
 #define PWM_OTHER_STATE GPIO_OVERRIDE_HIGH
 #endif
 
-Driver::Driver(uint fin_rin, uint resolution, float freq, float dutyOffset) {
-	assert((fin_rin % 2) == 0);
-	this->pins = fin_rin;
+Driver::Driver(uint fin, uint rin, bool reversed, uint resolution, float freq, float dutyOffset) {
+	uint fs = pwm_gpio_to_slice_num(fin);
+	uint rs = pwm_gpio_to_slice_num(rin);
+	assert(fs == rs);
+
+	this->reversed = reversed;
+	if (fin > rin) {
+		this->reversed ^= true;
+		fin = rin;
+	}
+
+	this->pins = fin;
 	this->resolution = resolution;
 	this->frequency = freq;
 	this->currentDuty = 0;
@@ -27,7 +36,7 @@ Driver::Driver(uint fin_rin, uint resolution, float freq, float dutyOffset) {
 	gpio_set_function(pins, GPIO_FUNC_PWM);
 	gpio_set_function(pins + 1, GPIO_FUNC_PWM);
 
-	this->slice = pwm_gpio_to_slice_num(fin_rin);
+	this->slice = fs;
 
 	pwm_set_wrap(this->slice, resolution);
 
@@ -97,7 +106,7 @@ void Driver::setPwm(float duty) {
 	int16_t level = (int16_t)(((float)this->resolution) * duty);
 	pwm_set_both_levels(this->slice, level, level);
 
-	if (fwd) {
+	if ((fwd && !this->reversed) || (!fwd && this->reversed)) {
 		gpio_set_outover(this->pins, GPIO_OVERRIDE_NORMAL);
 		gpio_set_outover(this->pins + 1, PWM_OTHER_STATE);
 	} else {

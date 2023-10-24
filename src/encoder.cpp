@@ -10,10 +10,17 @@
 
 #define ENCODER_TICK_COUNT 1024
 
-Encoder::Encoder(uint pin_ab, uint state_machine, PIO pio, int max_step_rate) {
+Encoder::Encoder(uint pin_a, uint pin_b, bool reversed, uint state_machine, PIO pio, int max_step_rate) {
 	this->pio = pio;
 	this->stateMachine = state_machine;
-	this->pinAB = pin_ab;
+	assert(abs(pin_a-pin_b) == 1);
+	this->reversed = reversed;
+	if (pin_a > pin_b) {
+		this->reversed ^= true;
+		pin_a = pin_b;
+	}
+	this->pinAB = pin_a;
+
 	if (pio_can_add_program(pio, &quadrature_encoder_program))
 		pio_add_program(pio, &quadrature_encoder_program);
 	pioInit(max_step_rate);
@@ -35,7 +42,7 @@ int32_t Encoder::getCount() {
 		ret = pio_sm_get_blocking(this->pio, this->stateMachine);
 		n--;
 	}
-	return ret;
+	return this->reversed ? -ret : ret;
 }
 
 float Encoder::convertRevolutions(int32_t ticks) {

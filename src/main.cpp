@@ -12,7 +12,7 @@
 #include <pins.hpp>
 #include <math.h>
 
-/*
+
 volatile float serialDst, serialAngle;
 volatile uint8_t serialCmd;
 
@@ -51,24 +51,22 @@ int main() {
 	//printf("Hello\n");
 
 	// Init HL Comms
-	Comm *hlComm = new Comm(I2C_SDA, I2C_SCL, 0x69, i2c0);
+	//Comm *hlComm = new Comm(I2C_SDA, I2C_SCL, 0x69, i2c0);
 
 	// Init encoders & drivers
-	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, 0);
-	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, 1);
-	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN);
-	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN);
+	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, true, 0);
+	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, true, 1);
+	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, false);
+	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, false);
 
 	// Init odometry
-	Odometry *odo = new Odometry(200.0f/2.0f);
+	Odometry *odo = new Odometry(86.8f/2.0f);
 
 	// Setup PIDs
 	PID *lSpeedPid = new PID(0.001f, 0.001f, 0.0f);
 	PID *rSpeedPid = new PID(0.001f, 0.001f, 0.0f);
 	PID *dstPid = new PID(10.0f, 0.0f, 0.0f);
 	PID *anglePid = new PID(800.0f, 0.0f, 0.0f);
-	lSpeedPid->setLpf(0.0f);
-	rSpeedPid->setLpf(0.0f);
 
 	// Setup PLLs
 	PLL *lPll = new PLL(9.0f);
@@ -83,7 +81,7 @@ int main() {
 
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lAlim, rAlim,
-									ctrl);
+									ctrl, 34.0f/2.0f);
 
 	// Init motor control
 	//printf("Begin\n");
@@ -126,8 +124,8 @@ int main() {
 		busy_wait_us(ASSERV_PERIOD_US-diff);
 	}
 }
-*/
 
+/*
 // Comm test
 int main() {
 	// Init PicoSDK
@@ -142,7 +140,7 @@ int main() {
 		busy_wait_us(1000000);
 	}
 }
-
+*/
 /*
 // Music test
 const int channelNb = 2;
