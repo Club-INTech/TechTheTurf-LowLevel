@@ -13,5 +13,4 @@ extern int32_t get_coder_right(void);
 
 extern void attach_encoder(void);
 
-
 #endif // _DEFINE_INCREMENTAL_ENCODER_H

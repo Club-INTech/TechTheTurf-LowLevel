@@ -11,44 +11,48 @@
 #include <stdio.h>
 #include "pico/time.h"
 
+#define LEFT        0
+#define RIGHT       1
+#define DISTANCE    0
+#define ORIENTAION  1
+
 struct motor motors[2];
-struct pid pid_theta;
-struct pid pid_rho;
-struct incremental_encoder encoders[2];
+struct pid pid[2];
 
+#define PI 3.14159265358979323846264338327
 
-#define MOTOR_PIN_LEFT_FORWARD      2
-#define MOTOR_PIN_LEFT_BACKWARD     3
-#define MOTOR_PIN_RIGHT_FORWARD     4
-#define MOTOR_PIN_RIGHT_BACKWARD    5
+#define MOTOR_PIN_LEFT_FORWARD      20
+#define MOTOR_PIN_LEFT_BACKWARD     21
+#define MOTOR_PIN_RIGHT_FORWARD     27
+#define MOTOR_PIN_RIGHT_BACKWARD    26
 
-#define INITIAL_PID_THETA_KP 1.0
-#define INITIAL_PID_THETA_KI 0.0
-#define INTIIAL_PID_THETA_KD 0.0
+#define INITIAL_PID_DISTANCE_KP 1.0
+#define INITIAL_PID_DISTANCE_KI 0.0
+#define INTIIAL_PID_DISTANCE_KD 0.0
 
-#define INITIAL_PID_RHO_KP 1.0
-#define INITIAL_PID_RHO_KI 0.0
-#define INTIIAL_PID_RHO_KD 0.0
+#define INITIAL_PID_ORIENTATION_KP 1.0
+#define INITIAL_PID_ORIENTATION_KI 0.0
+#define INTIIAL_PID_ORIENTATION_KD 0.0
+
+#define TICKS_PER_TERN 1024
+#define ENCODER_DIAMETER 34e-3
+#define DISTANCE_BETWEEN_ENCODERS = 86.8e-3
+
 
 void setup()
 {
     stdio_init_all();
     motors[LEFT] = motor_new(MOTOR_PIN_LEFT_FORWARD, MOTOR_PIN_LEFT_BACKWARD);
     motors[RIGHT] = motor_new(MOTOR_PIN_RIGHT_FORWARD, MOTOR_PIN_RIGHT_BACKWARD);
-    attach_encoder();
-//    pid[0] = pid _new(PID_KP, PID_KI, PID_KD);
-//    pid[1] = pid_new(PID_KP, PID_KI, PID_KD);
 
-    pid_theta = pid_new(INITIAL_PID_THETA_KP, INITIAL_PID_THETA_KI, INITIAL_PID_THETA_KD);
-    pid_rho = pid_new(INITIAL_PID_RHO_KP, INITIAL_PID_RHO_KI, INITIAL_PID_RHO_KD);
+    pid[DISTANCE] = pid_new(INITIAL_PID_ORIENTATION_KP, INITIAL_PID_ORIENTATION_KI, INITIAL_PID_ORIENTATION_KD);
+    pid[ORIENTATION] = pid_new(INITIAL_PID_DISTANCE_KP, INITIAL_PID_DISTANCE_KI, INITIAL_PID_DISTANCE_KD);
+
+    attach_encoder();
 
 //    gpio_init(0);
 //    attach_encoder(NULL, 0);
 }
-
-volatile decimal_t position_ticks = 0.0;
-volatile decimal_t angular_ticks = 0.0;
-volatile uint64_t prev_time = 0;
 
 void loop()
 {
@@ -56,19 +60,21 @@ void loop()
     int32_t left_ticks = get_coder_left();
     int32_t right_ticks = get_coder_right();
 
-    decimal_t speed_ticks = (decimal_t)(left_ticks + right_ticks) / 2.0;
-    decimal_t angular_speed_ticks = (decimal_t)(right_ticks - left_ticks);
+    decimal_t distance = (decimal_t)(left_ticks + right_ticks) * PI * ENCODER_DIAMETER / DISTANCE_BETWEEN_ENCODERS / 2.0;
+    decimal_t orientation = (decimal_t)(right_ticks - left_ticks) * PI ( ENCODER_DIAMETER / DISTANCE_BETWEEN_ENCODERS;
 
-    uint64_t cur_time = time_us_64();
-    decimal_t dt = (cur_time - prev_time) / 1000000.0;
+    decimal_t target_distance = 10.f;
+    decimal_t target_orientation = 10.f;
 
-    position_ticks += dt * speed_ticks;
-    angular_ticks += dt * angular_speed_ticks;
+    decimal_t pid_distance = pid_advance(&pid[DISTANCE], target_distance - distance);
+    decmial_t orientation_delta = target_distance - distance;
+    orientation_delta += PI;
+    orientation_delta %= 2.0 * PI;
+    orientation_delta -= PI;
+    decimal_t pid_orientation = pid_advance(&pid[ORIENTATION], orientation_delta);
 
-    
-
-    motor_set_rotation(&motors[LEFT], (float)get_coder_left() / 100);
-    motor_set_rotation(&motors[RIGHT], (float)get_coder_left() / 100);
+    motor_set_rotation(&motors[LEFT], pid_distance - pid_orientation);
+    motor_set_rotation(&motors[RIGHT], pid_distance + pid_orientation);
     motor_dispatch(&motors[LEFT]);
     motor_dispatch(&motors[RIGHT]);
 }

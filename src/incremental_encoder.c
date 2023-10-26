@@ -4,10 +4,10 @@
 #include "hardware/irq.h"
 #include <stdio.h>
 
-#define ENCODER_PIN_LEFT_A      6
-#define ENCODER_PIN_LEFT_B      7
-#define ENCODER_PIN_RIGHT_A     8
-#define ENCODER_PIN_RIGHT_B     9
+#define ENCODER_PIN_LEFT_A      17
+#define ENCODER_PIN_LEFT_B      16
+#define ENCODER_PIN_RIGHT_A     19
+#define ENCODER_PIN_RIGHT_B     18
 
 
 #define ENCODER_PIN_LEFT_A_MASK         (1 << ENCODER_PIN_LEFT_A)
