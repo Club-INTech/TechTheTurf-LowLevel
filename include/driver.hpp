@@ -15,12 +15,21 @@ public:
 	void setResolution(uint resolution);
 	// Set the offset to the PWM duty cycle to avoid the useless range of motors
 	void setDutyOffset(float offset);
-	// Duty cycle + for forwards, - for backwards, 0 for idle
+	// Duty cycle: + for forwards, - for backwards, 0 for idle (not braking)
 	void setPwm(float duty);
 
-private:
+	// Low level operations
 
-	void updateClkdiv();
+	// ClkDiv settings
+	// Will get overriden by calls to setFreq
+	// div in [0.0f, 256.0f[
+	void setClkDiv(float div);
+	// divInt in [0, 255], divFrac in [0, 15]
+	void setClkDiv(uint8_t divInt, uint8_t divFrac);
+
+	// Raw Duty Cycle change, 0.0-1.0, no direction
+	void setRawPwm(float duty);
+private:
 
 	uint pins;
 	uint slice;

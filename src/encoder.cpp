@@ -8,7 +8,7 @@
 
 #include "quadrature_encoder.pio.h"
 
-#define ENCODER_TICK_COUNT 1024
+#define ENCODER_TICK_COUNT (1024*4)
 
 Encoder::Encoder(uint pin_a, uint pin_b, bool reversed, uint state_machine, PIO pio, int max_step_rate) {
 	this->pio = pio;

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
+#include <hardware/clocks.h>
 #include <pico/rand.h>
 
 #include <comm.hpp>
@@ -44,6 +45,14 @@ void serial_proc() {
 
 #define ASSERV_PERIOD_US 2000
 
+// Didier
+//#define WHEEL_RADIUS (68.0f/2.0f)
+//#define ENCODER_DIST (200.0f/2.0f)
+
+// Paminable
+#define WHEEL_RADIUS (34.0f/2.0f)
+#define ENCODER_DIST 86.8f
+
 int main() {
 	// Init PicoSDK
 	stdio_init_all();
@@ -54,34 +63,34 @@ int main() {
 	//Comm *hlComm = new Comm(I2C_SDA, I2C_SCL, 0x69, i2c0);
 
 	// Init encoders & drivers
-	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, true, 0);
-	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, true, 1);
+	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, false, 0);
+	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, false, 1);
 	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, false);
 	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, false);
 
 	// Init odometry
-	Odometry *odo = new Odometry(86.8f/2.0f);
+	Odometry *odo = new Odometry(ENCODER_DIST);
 
 	// Setup PIDs
-	PID *lSpeedPid = new PID(0.001f, 0.001f, 0.0f);
-	PID *rSpeedPid = new PID(0.001f, 0.001f, 0.0f);
-	PID *dstPid = new PID(10.0f, 0.0f, 0.0f);
-	PID *anglePid = new PID(800.0f, 0.0f, 0.0f);
+	PID *lSpeedPid = new PID(0.001f, 0.0f, 0.0f);
+	PID *rSpeedPid = new PID(0.001f, 0.0f, 0.0f);
+	PID *dstPid = new PID(10.0f, 0.1f, 0.05f);
+	PID *anglePid = new PID(800.0f, 2.0f, 0.5f);
 
 	// Setup PLLs
 	PLL *lPll = new PLL(9.0f);
 	PLL *rPll = new PLL(9.0f);
 
 	// Setup accel limiters
-	AccelLimiter *lAlim = new AccelLimiter(1000.0f);
-	AccelLimiter *rAlim = new AccelLimiter(1000.0f);
+	AccelLimiter *dstAlim = new AccelLimiter(1000.0f);
+	AccelLimiter *angleAlim = new AccelLimiter(1000000.0f);
 
 	// Setup the controller
 	Controller *ctrl = new Controller(odo);
 
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
-									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lAlim, rAlim,
-									ctrl, 34.0f/2.0f);
+									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, dstAlim, angleAlim,
+									ctrl, WHEEL_RADIUS);
 
 	// Init motor control
 	//printf("Begin\n");
@@ -89,6 +98,24 @@ int main() {
 	uint nb = 0;
 
 	multicore_launch_core1(serial_proc);
+
+	/*while (true) {
+		printf("Left Forwards\n");
+		lDrv->setPwm(0.5);
+		busy_wait_us(2000000);
+		printf("Left Backwards\n");
+		lDrv->setPwm(-0.5);
+		busy_wait_us(2000000);
+		lDrv->setPwm(0.0);
+		printf("Right Forwards\n");
+		rDrv->setPwm(0.5);
+		busy_wait_us(2000000);
+		printf("Right Backwards\n");
+		rDrv->setPwm(-0.5);
+		busy_wait_us(2000000);
+		rDrv->setPwm(0.0);
+		busy_wait_us(2000000);
+	}*/
 
 	while (true) {
 		absolute_time_t start = get_absolute_time();
@@ -118,6 +145,8 @@ int main() {
 		cl->work();
 		nb++;
 		absolute_time_t end = get_absolute_time();
+
+		//printf("Enc: l:%i r:%i\n", lEnc->getCount(), rEnc->getCount());
 
 		// Try to keep the period 
 		int64_t diff = absolute_time_diff_us(start, end);
@@ -165,18 +194,49 @@ int findChan(int chan, int note) {
 	return -1;
 }
 
+uint16_t bestDivs[256] = {2558,1504,3326,1788,3809,3766,3070,2737,4090,2554,2802,233,2558,1717,3326,894,3809,3766,3070,2737,2927,1251,3310,233,509,396,1663,673,1955,3766,3070,2737,503,666,2784,233,509,2804,2879,673,1678,1883,3070,2947,848,333,955,1241,509,2022,1453,2384,839,172,1591,1080,2785,3324,1586,1241,509,3086,1453,1542,993,386,2843,540,2785,3324,793,928,509,1543,1453,771,993,386,3074,270,2000,3324,2052,928,509,2819,1453,1646,173,386,1537,2999,3,1662,1026,2792,509,4072,453,823,173,386,2816,761,2049,831,513,2792,509,3073,3244,1424,2134,386,333,761,3072,1280,2304,2792,3840,3584,1622,3352,1067,386,1352,761,1536,2793,1889,2792,2447,1792,811,1233,2581,1536,1600,761,768,3444,512,1396,2447,1909,3884,1710,3338,768,800,761,1882,1072,256,768,1413,3379,2442,3996,3830,3467,512,2428,512,536,3970,3884,1373,988,2442,964,1915,3889,256,3431,256,268,3970,1015,1513,988,3535,964,953,3246,4004,2971,3986,2954,3970,2427,2676,622,3943,354,2396,1623,2130,3661,2121,1605,1857,3389,1338,311,3891,305,1326,2859,1065,3878,3108,2850,3104,3614,797,2075,26,2072,535,3605,2580,1811,1554,1297,1552,1807,2318,3085,13,1036,2315,3850,1290,3081,777,2824,776,3079,1287,3590,2054,518,3333,1797,517,3588,2308,1284,260,3587,2563,1795,1027,259};
+uint16_t bestRes[256] = {60060,64334,53468,50942,53724,62632,42448,57448,38382,36282,35366,34760,30030,39782,26734,50942,26862,31316,21224,28724,43118,20002,17970,17380,15104,25758,26734,19948,18562,15658,10612,14362,9746,14746,9550,8690,7552,7374,26734,9974,10654,15658,5306,9686,15014,14746,5730,4660,3776,3914,4912,9974,10654,4162,12202,11338,2668,2248,10646,2330,1888,30574,2456,63022,1684,2752,12202,11338,1334,1124,10646,1580,944,30574,1228,63022,842,1376,61426,11338,722,562,29794,790,472,30574,614,910,548,688,61426,434,25082,562,29794,272,236,242,270,910,274,344,61426,160,25082,562,29794,136,118,16106,154,174,274,172,274,80,25082,56818,29794,68,15926,16106,154,506,274,86,146,40,25082,38,86,34,52,16106,154,30,274,14914,82,20,25082,38,33518,34,26,30,74,18,274,14914,82,10,26,46,33518,10546,14,34,12,10,6,10,10558,10,9406,46,8,22,10,4,6,4,6,14,10558,6,9406,46,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2};
+
+void setFreq(Driver *drv, float freq) {
+	drv->setFreq(freq);
+	return;
+	uint besttop = 32;
+	uint bestdiv = 1;
+	float bestfreq = 1;
+	float bestdiff = 1e9;
+	float sysclk = (float)clock_get_hz(clk_sys);
+	for (uint top=32; top<16384; top+=64) {
+		for (uint div=1; div<256; div+=2) {
+			float cfreq = sysclk/(top*div);
+			float diff = abs(freq-cfreq);
+			if (diff < bestdiff) {
+				bestdiff = diff;
+				besttop = top;
+				bestfreq = cfreq;
+				bestdiv = div;
+			}
+		}
+	}
+	printf("%f %f %f %i\n", bestdiff, freq, bestfreq, besttop);
+	drv->setResolution(besttop);
+	drv->setClkDiv(bestdiv, 0);
+}
+
 void startNote(int chan, int note, int vel) {
 	int idx = getOpenChan();
 	if (idx == -1)
 		return;
 
-	float freq = std::pow(2.0,(((float)note)+(12.0*0)-69.0)/12.0)*440.0f;
-	//printf("%f %i\n", freq, note);
+	float freq = std::pow(2.0,(((float)note)-69.0)/12.0)*440.0f;
+	printf("%i %f %i\n", idx, freq, note);
 
 	channels[idx] = chan;
 	notes[idx] = note;
 	velocities[idx] = vel;
-	drivers[idx]->setFreq(freq);
+	
+	setFreq(drivers[idx], freq);
+	//drivers[idx]->setResolution(bestRes[note]);
+	//drivers[idx]->setClkDiv(bestDivs[note]&0xFF, (bestDivs[note]>>8)&0xFF);
 	//0.15 * (((float)vel)/127.0)
 	drivers[idx]->setPwm(0.5f);
 }
@@ -202,21 +262,21 @@ void stopAllNotes() {
 
 void sweep() {
 	for (float f=0; f<=1e3;f+=10) {
-		float rnd = ((float)get_rand_32())/4294967295.0; 
+		//float rnd = ((float)get_rand_32())/4294967295.0; 
 		//drivers[0]->setFreq(f+((rnd-0.5)*2.0f*50.0f));
-		drivers[0]->setFreq(f);
-		drivers[0]->setPwm(0.5f);
+		setFreq(drivers[0], f);
+		drivers[0]->setPwm(0.1f);
 		sleep_ms(10);
 		printf("%f\n", f);
 	}
-	for (float f=1e3; f>=0;f-=10) {
-		float rnd = ((float)get_rand_32())/4294967295.0; 
-		//drivers[0]->setFreq(f+((rnd-0.5)*2.0f*50.0f));
-		drivers[0]->setFreq(f);
-		drivers[0]->setPwm(0.5f);
-		sleep_ms(10);
-		printf("%f\n", f);
-	}
+	//for (float f=1e3; f>=0;f-=10) {
+	//	float rnd = ((float)get_rand_32())/4294967295.0; 
+	//	//drivers[0]->setFreq(f+((rnd-0.5)*2.0f*50.0f));
+	//	drivers[0]->setFreq(f);
+	//	drivers[0]->setPwm(0.5f);
+	//	sleep_ms(10);
+	//	printf("%f\n", f);
+	//}
 
 }
 
@@ -224,12 +284,12 @@ int main() {
 	// Init PicoSDK
 	stdio_init_all();
 	sleep_ms(2000);
-	printf("Hello\n");
+	printf("Hello %i\n", clock_get_hz(clk_sys));
 
-	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, 1024, 40e3, 0.0);
-	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, 1024, 40e3, 0.0);
-	drivers[0] = lDrv;
-	drivers[1] = rDrv;
+	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, false, 8192, 40e3, 0.0);
+	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, false, 8192, 40e3, 0.0);
+	drivers[0] = rDrv;
+	drivers[1] = lDrv;
 
 	int chan, note, vel;
 	float tmp1, tmp2;
@@ -238,7 +298,7 @@ int main() {
 		switch (getchar()) {
 			case 'f':
 				scanf("%i %f %f", &chan, &tmp1, &tmp2);
-				drivers[chan]->setFreq(tmp1);
+				setFreq(drivers[chan], tmp1);
 				drivers[chan]->setPwm(tmp2);
 				printf("%i %f %f\n", chan, tmp1, tmp2);
 				break;

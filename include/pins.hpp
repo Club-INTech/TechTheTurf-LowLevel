@@ -14,8 +14,9 @@
 #define RIGHT_INCREMENTAL_A_PIN 8
 #define RIGHT_INCREMENTAL_B_PIN 9
 */
-/*
+
 // Dider
+/*
 #define LEFT_MOTOR_FW_PIN 14
 #define LEFT_MOTOR_RW_PIN 15
 #define RIGHT_MOTOR_FW_PIN 16
@@ -28,6 +29,7 @@
 */
 
 // Carte 2A
+
 #define LEFT_MOTOR_FW_PIN 20
 #define LEFT_MOTOR_RW_PIN 21
 #define RIGHT_MOTOR_FW_PIN 27

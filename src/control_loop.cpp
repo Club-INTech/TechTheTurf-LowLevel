@@ -4,7 +4,7 @@
 
 ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, Driver *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *lAlim, AccelLimiter *rAlim, Controller *ctrl, float encoderWheelRadius) {
+				AccelLimiter *dstAlim, AccelLimiter *angleAlim, Controller *ctrl, float encoderWheelRadius) {
 	this->encLeft = encLeft;
 	this->encRight = encRight;
 	this->drvLeft = drvLeft;
@@ -17,8 +17,8 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->anglePid = anglePid;
 	this->lPll = lPll;
 	this->rPll = rPll;
-	this->lAlim = lAlim;
-	this->rAlim = rAlim;
+	this->dstAlim = dstAlim;
+	this->angleAlim = angleAlim;
 	this->ctrl = ctrl;
 
 	this->encoderWheelRadius = encoderWheelRadius;
@@ -33,7 +33,6 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->lastCountRight = 0;
 	this->lSpeedTarget = 0;
 	this->rSpeedTarget = 0;
-	//setTarget(0);
 }
 
 ControlLoop::~ControlLoop() {
@@ -84,12 +83,12 @@ void ControlLoop::work() {
 		this->lastTimePos = time;
 		
 		// Calculate virtual polar motor targets
-		float dstSpeedTarget = this->dstPid->calculateAcc(this->ctrl->getDstTarget(), dtPos);
-		float angleSpeedTarget = this->anglePid->calculateAcc(this->ctrl->getAngleTarget(), dtPos);
+		float dstSpeedTarget = dstAlim->limit(this->dstPid->calculateAcc(this->ctrl->getDstTarget(), dtPos), dtPos);
+		float angleSpeedTarget = angleAlim->limit(this->anglePid->calculateAcc(this->ctrl->getAngleTarget(), dtPos), dtPos);
 		
 		// Real motor speed targets
-		this->lSpeedTarget = lAlim->limit(dstSpeedTarget - angleSpeedTarget, dtPos);
-		this->rSpeedTarget = rAlim->limit(dstSpeedTarget + angleSpeedTarget, dtPos);
+		this->lSpeedTarget = dstSpeedTarget - angleSpeedTarget;
+		this->rSpeedTarget = dstSpeedTarget + angleSpeedTarget;
 	}
 
 	//this->rSpeedTarget = 60.0f * (((float)std::min(counter,50u))/50.0f) + -120.0f * (((float)std::min(std::max(((int)counter)-200,0),50))/50.0f);
