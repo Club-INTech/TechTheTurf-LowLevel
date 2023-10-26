@@ -1,0 +1,3 @@
+/home/intech/gate/pami/build/pioasm/CMakeFiles/rebuild_cache.dir
+/home/intech/gate/pami/build/pioasm/CMakeFiles/edit_cache.dir
+/home/intech/gate/pami/build/pioasm/CMakeFiles/pioasm.dir
