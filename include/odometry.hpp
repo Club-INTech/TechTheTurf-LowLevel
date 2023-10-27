@@ -8,12 +8,13 @@ public:
 	Odometry(float encoderDistance);
 	~Odometry();
 
-	void reset(float x = 0.0f, float y = 0.0f, float theta = 0.0f);
+	void reset(float x = 0.0f, float y = 0.0f, float dst = 0.0f, float theta = 0.0f);
 	void update(float deltaMovLeft, float deltaMovRight);
 
 	// Current accumulated estimated position
 	float x;
 	float y;
+	float dst;
 	float theta;
 
 	// Last update's delta values

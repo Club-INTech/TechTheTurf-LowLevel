@@ -10,9 +10,10 @@ Odometry::~Odometry() {
 
 }
 
-void Odometry::reset(float x, float y, float theta) {
+void Odometry::reset(float x, float y, float dst, float theta) {
 	this->x = x;
 	this->y = y;
+	this->dst = dst;
 	this->theta = theta;
 }
 
@@ -22,23 +23,20 @@ void Odometry::update(float deltaMovLeft, float deltaMovRight) {
 	float diffDst = deltaMovRight - deltaMovLeft;
 	this->deltaTheta = diffDst / this->encoderDistance;
 
-	if (diffDst == 0) { // Mvmt linéaire
+	if (diffDst == 0) { // Linear mouvement
 		this->x += this->deltaDst * cos(theta);
 		this->y += this->deltaDst * sin(theta);
-	} else { // Arc de cercle
-		// Rayon de courbure
+	} else { // Arc mouvement
+		// Radius of curvature
 		float rCourb = this->deltaDst/this->deltaTheta;
 
-		// Mise à jour position
-		this->x += rCourb * (-sin(theta) + sin(theta + this->deltaTheta));
-		this->y += rCourb * ( cos(theta) - cos(theta + this->deltaTheta));
-		// Mise à jour angle
+		// Update distance
+		this->dst += this->deltaDst;
+		// Update angle
 		this->theta += this->deltaTheta;
 
-		// Clamp PI
-		if (this->theta > M_PI)
-			this->theta -= 2 * M_PI;
-		else if (this->theta <= M_PI)
-			this->theta += 2 * M_PI;
+		// Update position
+		this->x += rCourb * (-sin(theta) + sin(theta + this->deltaTheta));
+		this->y += rCourb * ( cos(theta) - cos(theta + this->deltaTheta));
 	}
 }

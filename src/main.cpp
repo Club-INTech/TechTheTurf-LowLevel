@@ -15,7 +15,7 @@
 
 
 volatile float serialDst, serialAngle;
-volatile uint8_t serialCmd;
+volatile uint8_t serialCmd, serialSquare;
 
 void serial_proc() {
 	while (true) {
@@ -33,6 +33,11 @@ void serial_proc() {
 			case 's':
 				scanf("%f %f", &serialDst, &serialAngle);
 				serialCmd = 3;
+				break;
+			case 'c':
+				scanf("%f", &serialDst);
+				serialCmd = 4;
+				serialSquare = 0;
 				break;
 			case 'r':
 				serialCmd = 2;
@@ -67,15 +72,17 @@ int main() {
 	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, false, 1);
 	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, false);
 	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, false);
+	//lDrv->setDutyOffset(0.15f);
+	//rDrv->setDutyOffset(0.15f);
 
 	// Init odometry
 	Odometry *odo = new Odometry(ENCODER_DIST);
 
 	// Setup PIDs
-	PID *lSpeedPid = new PID(0.001f, 0.0f, 0.0f);
-	PID *rSpeedPid = new PID(0.001f, 0.0f, 0.0f);
-	PID *dstPid = new PID(10.0f, 0.1f, 0.05f);
-	PID *anglePid = new PID(800.0f, 2.0f, 0.5f);
+	PID *lSpeedPid = new PID(0.001f, 0.002f, 0.00005f);
+	PID *rSpeedPid = new PID(0.001f, 0.002f, 0.00005f);
+	PID *dstPid = new PID(10.0f, 0.5f, 0.05f);
+	PID *anglePid = new PID(1000.0f, 2.0f, 0.5f);
 
 	// Setup PLLs
 	PLL *lPll = new PLL(9.0f);
@@ -99,7 +106,8 @@ int main() {
 
 	multicore_launch_core1(serial_proc);
 
-	/*while (true) {
+#if 0
+	while (true) {
 		printf("Left Forwards\n");
 		lDrv->setPwm(0.5);
 		busy_wait_us(2000000);
@@ -115,22 +123,39 @@ int main() {
 		busy_wait_us(2000000);
 		rDrv->setPwm(0.0);
 		busy_wait_us(2000000);
-	}*/
+	}
+#endif
 
 	while (true) {
 		absolute_time_t start = get_absolute_time();
 		if (serialCmd != 0) {
 			if (serialCmd == 1)  {
 				ctrl->movePolar(serialDst, (serialAngle / 180.0f) * M_PI);
+				serialCmd = 0;
 			} else if (serialCmd == 2) {
 				odo->reset();
 				ctrl->reset();
 				dstPid->reset();
 				anglePid->reset();
+				serialCmd = 0;
+				serialSquare = 0;
 			} else if (serialCmd == 3) {
-				ctrl->setTarget(serialDst, serialAngle);	
+				ctrl->setTarget(serialDst, serialAngle);
+				serialCmd = 0;
+			} else if (serialCmd == 4) {
+				float diffDst = abs(ctrl->getDstTarget()-odo->dst);
+				float diffAngle = abs(ctrl->getAngleTarget()-odo->theta);
+				if (diffDst < 2.0f && diffAngle < 0.3f) {
+					if (serialSquare%2 == 0) {
+						ctrl->movePolar(serialDst, 0.0f);
+					} else if (serialSquare%2 == 1) {
+						ctrl->movePolar(0.0f, ((-90.0f) / 180.0f) * M_PI);
+					}
+					serialSquare++;
+				}
+				if (serialSquare == 8)
+					serialCmd = 0;
 			}
-			serialCmd = 0;
 		}
 		//printf("%i %f\n", nb, (((float)std::min(nb,1000u))/1000.0f)*1.0f);
 		//if (nb == 200)

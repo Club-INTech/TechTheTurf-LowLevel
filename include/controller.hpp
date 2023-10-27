@@ -15,10 +15,10 @@ public:
 	void setTarget(float dst, float theta);
 	void reset(float dst=0, float theta=0);
 
-	float targetDst;
 private:
 	Odometry *odo;
 
+	float targetDst;
 	float targetTheta;
 	float oldTargetTheta;
 	float oldTargetDst;

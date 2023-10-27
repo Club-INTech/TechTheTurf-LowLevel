@@ -23,8 +23,8 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 
 	this->encoderWheelRadius = encoderWheelRadius;
 
-	this->lSpeedPid->setClamp(-0.7f, 0.7f);
-	this->rSpeedPid->setClamp(-0.7f, 0.7f);
+	this->lSpeedPid->setClamp(-1.0f, 1.0f);
+	this->rSpeedPid->setClamp(-1.0f, 1.0f);
 
 	this->lastTime = get_absolute_time();
 	this->lastTimePos = this->lastTime;
@@ -70,10 +70,6 @@ void ControlLoop::work() {
 	// Update odometry
 	this->odo->update(lDetaDst, rDetaDst);
 
-	// Update Polar PIDs
-	this->dstPid->accumulate(this->odo->deltaDst);
-	this->anglePid->accumulate(this->odo->deltaTheta);
-
 	// Position asserv
 	if (counter == 4) {
 		counter = 0;
@@ -83,8 +79,8 @@ void ControlLoop::work() {
 		this->lastTimePos = time;
 		
 		// Calculate virtual polar motor targets
-		float dstSpeedTarget = dstAlim->limit(this->dstPid->calculateAcc(this->ctrl->getDstTarget(), dtPos), dtPos);
-		float angleSpeedTarget = angleAlim->limit(this->anglePid->calculateAcc(this->ctrl->getAngleTarget(), dtPos), dtPos);
+		float dstSpeedTarget = dstAlim->limit(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), dtPos);
+		float angleSpeedTarget = angleAlim->limit(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), dtPos);
 		
 		// Real motor speed targets
 		this->lSpeedTarget = dstSpeedTarget - angleSpeedTarget;
@@ -98,7 +94,7 @@ void ControlLoop::work() {
 	float lSpeed = this->lSpeedPid->calculate(this->lSpeedTarget, lCurrentSpeed, dt);
 	float rSpeed = this->rSpeedPid->calculate(this->rSpeedTarget, rCurrentSpeed, dt);
 
-	printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->theta, dt*1000.0f);
+	printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
 
 	// Write speed to motors
 	this->drvLeft->setPwm(lSpeed);
