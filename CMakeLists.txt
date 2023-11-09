@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.13)
+make_minimum_required(VERSION 3.13)
 
-include(/home/intech/pico/pico-sdk/pico_sdk_init.cmake)
+include(/Users/Emile/Documents/development/pico/pico-sdk/pico_sdk_init.cmake)
 
 project(pami)
 

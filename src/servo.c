@@ -1,7 +1,7 @@
 #include "servo.h"
 
 #include "pico/time.h"
-
+/*
 struct pid2 pid2_new(decimal_t kp, decimal_t ki, decimal_t kd)
 {
     struct pid2 pid2;
@@ -35,7 +35,7 @@ decimal_t pid2_advance(struct pid2 *pid2, decimal_t current_input)
             + pid2->kd * pid2->state_input[2]);
 
 }
-
+*/
 struct pid pid_new(decimal_t kp, decimal_t ki, decimal_t kd)
 {
     return (struct pid)

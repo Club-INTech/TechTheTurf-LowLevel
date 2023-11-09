@@ -2,6 +2,6 @@
 
 cd build
 cmake ..
-make -j4
+make -j
 picotool load -F pami-main.uf2
 picotool reboot

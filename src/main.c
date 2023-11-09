@@ -3,21 +3,18 @@
 #include "incremental_encoder.h"
 #include "types.h"
 
-#include "pico/stdlib.h"
-#include "hardware/gpio.h"
+#include <pico/stdlib.h>
+#include <hardware/gpio.h>
 
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
 #include "pico/time.h"
 
-#define LEFT        0
-#define RIGHT       1
-#define DISTANCE    0
-#define ORIENTAION  1
-
-struct motor motors[2];
-struct pid pid[2];
+#define LEFT            0
+#define RIGHT           1
+#define DISTANCE        0
+#define ORIENTATION     1
 
 #define PI 3.14159265358979323846264338327
 
@@ -28,16 +25,18 @@ struct pid pid[2];
 
 #define INITIAL_PID_DISTANCE_KP 1.0
 #define INITIAL_PID_DISTANCE_KI 0.0
-#define INTIIAL_PID_DISTANCE_KD 0.0
+#define INITIAL_PID_DISTANCE_KD 0.0
 
 #define INITIAL_PID_ORIENTATION_KP 1.0
 #define INITIAL_PID_ORIENTATION_KI 0.0
-#define INTIIAL_PID_ORIENTATION_KD 0.0
+#define INITIAL_PID_ORIENTATION_KD 0.0
 
 #define TICKS_PER_TERN 1024
 #define ENCODER_DIAMETER 34e-3
 #define DISTANCE_BETWEEN_ENCODERS = 86.8e-3
 
+struct motor motors[2];
+struct pid pid[2];
 
 void setup()
 {
@@ -67,7 +66,7 @@ void loop()
     decimal_t target_orientation = 10.f;
 
     decimal_t pid_distance = pid_advance(&pid[DISTANCE], target_distance - distance);
-    decmial_t orientation_delta = target_distance - distance;
+    decmial_t orientation_delta = target_orientation - orientation;
     orientation_delta += PI;
     orientation_delta %= 2.0 * PI;
     orientation_delta -= PI;

@@ -39,8 +39,8 @@ struct motor motor_new(uint8_t pin_left, uint8_t pin_right)
 
 
 static inline decimal_t clampf(decimal_t a, decimal_t min, decimal_t max)
-{
-    return a > min ? a < max ? a : max : min;
+{ 
+    return (a < min) ? min : (a > max ? max : a);
 }
 
 void motor_set_rotation(struct motor *motor, decimal_t rotation)
