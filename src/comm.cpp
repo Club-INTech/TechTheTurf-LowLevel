@@ -7,32 +7,51 @@ static Comm *i2cComm[2] = {nullptr, nullptr};
 void dispatchSlave(i2c_inst_t *i2c, i2c_slave_event_t event) {
 	uint idx = i2c_hw_index(i2c);
 	if (i2cComm[idx] != nullptr)
-		i2cComm[idx]->slaveHandler(i2c, event);
+		i2cComm[idx]->slaveHandler(event);
+}
+
+void Comm::i2cInit(uint8_t address) {
+	uint idx = i2c_hw_index(i2c);
+	i2cComm[idx] = this;
+
+	gpio_init(this->sdaPin);
+	gpio_set_function(this->sdaPin, GPIO_FUNC_I2C);
+	gpio_pull_up(this->sdaPin);
+
+	gpio_init(this->sclPin);
+	gpio_set_function(this->sclPin, GPIO_FUNC_I2C);
+	gpio_pull_up(this->sclPin);
+
+	i2c_init(this->i2c, I2C_BAUDRATE);
+
+	// configure I2C0 for slave mode
+	i2c_slave_init(i2c, address,  &dispatchSlave);
+}
+
+void Comm::i2cDeinit() {
+	i2c_slave_deinit(this->i2c);
+
+	i2c_deinit(this->i2c);
+
+	gpio_deinit(this->sdaPin);
+	gpio_deinit(this->sclPin);
+
+	uint idx = i2c_hw_index(this->i2c);
+	i2cComm[idx] = nullptr;
 }
 
 Comm::Comm(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c) {
-	gpio_init(sdaPin);
-	gpio_set_function(sdaPin, GPIO_FUNC_I2C);
-	gpio_pull_up(sdaPin);
+	this->sdaPin = sdaPin;
+	this->sclPin = sclPin;
+	this->i2c = i2c;
 
-	gpio_init(sclPin);
-	gpio_set_function(sclPin, GPIO_FUNC_I2C);
-	gpio_pull_up(sclPin);
-
-	i2cComm[i2c_hw_index(i2c)] = this;
-
-	i2c_init(i2c, I2C_BAUDRATE);
-	// configure I2C0 for slave mode
-	i2c_slave_init(i2c, addr,  &dispatchSlave);
+	i2cInit(addr);
 
 	resetCmd();
 }
 
 Comm::~Comm() {
-	for (int i=0;i<2;i++) {
-		if (i2cComm[i] == this)
-			i2cComm[i] = nullptr;
-	}
+	i2cDeinit();
 }
 
 void Comm::resetCmd() {
@@ -54,18 +73,18 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 	}
 }
 
-void Comm::slaveHandler(i2c_inst_t *i2c, i2c_slave_event_t event) {
+void Comm::slaveHandler(i2c_slave_event_t event) {
 	size_t nb, i;
 	uint8_t byte;
 	switch (event) {
 		// Data from master is available for reading. Slave must read from Rx FIFO.
 		case I2C_SLAVE_RECEIVE:
-			nb = i2c_get_read_available(i2c);
+			nb = i2c_get_read_available(this->i2c);
 			//printf("Rcv av:%i\n", nb);
 			if (nb < 1) // ?????
 				return;
 			for (size_t i=0;i<nb;i++) {
-				byte = i2c_read_byte_raw(i2c);
+				byte = i2c_read_byte_raw(this->i2c);
 				if (this->cmdDataSize >= MAX_DATA_SIZE) // ?????
 					return;
 				this->cmdData[this->cmdDataSize++] = byte;
@@ -83,9 +102,9 @@ void Comm::slaveHandler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 			//printf("after\n");
 			for (i=0;i<this->respDataSize;i++) {
 				do {
-					nb = i2c_get_write_available(i2c);
+					nb = i2c_get_write_available(this->i2c);
 				} while (nb == 0);
-				i2c_write_byte_raw(i2c, this->respData[i]);
+				i2c_write_byte_raw(this->i2c, this->respData[i]);
 			}
 			//printf("wrote\n");
 			resetCmd();

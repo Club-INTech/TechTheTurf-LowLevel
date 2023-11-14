@@ -13,11 +13,13 @@ public:
 	Comm(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c);
 	~Comm();
 	
-	void slaveHandler(i2c_inst_t *i2c, i2c_slave_event_t event);
+	void slaveHandler(i2c_slave_event_t event);
 private:
 
 	void handleCmd(uint8_t *data, size_t size);
 
+	void i2cInit(uint8_t address);
+	void i2cDeinit();
 
 	void resetCmd();
 
@@ -31,4 +33,5 @@ private:
 
 	uint sdaPin;
 	uint sclPin;
+	i2c_inst_t *i2c;
 };
