@@ -1,6 +1,7 @@
 #include <comm.hpp>
 #include <hardware/gpio.h>
 #include <stdio.h>
+#include <cstring>
 
 static Comm *i2cComm[2] = {nullptr, nullptr};
 
@@ -54,22 +55,31 @@ Comm::~Comm() {
 	i2cDeinit();
 }
 
+void Comm::resetRecvCmd() {
+	this->recvDataSize = 0;
+	memset(this->recvData, 0, MAX_DATA_SIZE);
+}
+
+void Comm::resetSendCmd() {
+	this->sendDataSize = 0;
+	memset(this->sendData, 0, MAX_DATA_SIZE);
+}
+
 void Comm::resetCmd() {
-	this->finishedRecv = false;
-	this->cmdDataSize = 0;
-	this->respDataSize = 0;
-	for (int i=0;i<MAX_DATA_SIZE;i++) {
-		this->cmdData[i] = 0;
-		this->respData[i] = 0;
-	}
+	resetRecvCmd();
+	resetSendCmd();
 }
 
 void Comm::handleCmd(uint8_t *data, size_t size) {
 	printf("handle size: %i\n", size);
-	this->respDataSize = size;
+	if (size < 1)
+		return;
+	if (data[0] == 0)
+		return;
+	this->sendDataSize = size;
 	for (size_t i=0;i<size;i++) {
 		//printf("%i: %i\n", i, data[i]);
-		this->respData[i] = data[i];
+		this->sendData[i] = data[i];
 	}
 }
 
@@ -83,36 +93,43 @@ void Comm::slaveHandler(i2c_slave_event_t event) {
 			//printf("Rcv av:%i\n", nb);
 			if (nb < 1) // ?????
 				return;
+
 			for (size_t i=0;i<nb;i++) {
 				byte = i2c_read_byte_raw(this->i2c);
-				if (this->cmdDataSize >= MAX_DATA_SIZE) // ?????
+				if (this->recvDataSize >= MAX_DATA_SIZE) // ?????
 					return;
-				this->cmdData[this->cmdDataSize++] = byte;
+				this->recvData[this->recvDataSize++] = byte;
 			}
+
 			break;
 		// Master is requesting data. Slave must write into Tx FIFO.
 		case I2C_SLAVE_REQUEST:
 			printf("Slave req\n");
-			this->finishedRecv = true;
-			if (!this->finishedRecv) { // ?????
-				resetCmd();
+			if (this->sendDataSize == 0) // ?????
 				return;
-			}
-			handleCmd((uint8_t*)&this->cmdData, this->cmdDataSize);
-			//printf("after\n");
-			for (i=0;i<this->respDataSize;i++) {
+
+			for (i=0;i<this->sendDataSize;i++) {
 				do {
 					nb = i2c_get_write_available(this->i2c);
 				} while (nb == 0);
-				i2c_write_byte_raw(this->i2c, this->respData[i]);
+
+				i2c_write_byte_raw(this->i2c, this->sendData[i]);
 			}
-			//printf("wrote\n");
-			resetCmd();
+
+			resetSendCmd();
 			break;
 		// Master has sent a Stop or Restart signal. Slave may prepare for the next transfer.
 		case I2C_SLAVE_FINISH:
 			printf("Slave finish TX\n");
-			this->finishedRecv = true;
+
+			if (this->recvDataSize == 0) // ?????
+				return;
+
+			resetSendCmd();
+
+			handleCmd((uint8_t*)&this->recvData, this->recvDataSize);
+
+			resetRecvCmd();
 			break;
 		default:
 			break; 

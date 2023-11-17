@@ -3,6 +3,7 @@
 #include <pico/multicore.h>
 #include <hardware/clocks.h>
 #include <pico/rand.h>
+#include <math.h>
 
 #include <comm.hpp>
 #include <encoder.hpp>
@@ -10,9 +11,18 @@
 #include <control_loop.hpp>
 #include <pll.hpp>
 #include <accel_limiter.hpp>
-#include <pins.hpp>
-#include <math.h>
 
+// Robot definition
+#define ROBOT_PAMI
+#define PAMI_CARTE_2A
+//#define ROBOT_DIDER
+#include <robot.hpp>
+
+//#define TEST_MUSIC
+#define TEST_COMM
+
+#ifndef TEST_MUSIC
+#ifndef TEST_COMM
 
 volatile float serialDst, serialAngle;
 volatile uint8_t serialCmd, serialSquare;
@@ -49,14 +59,6 @@ void serial_proc() {
 }
 
 #define ASSERV_PERIOD_US 2000
-
-// Didier
-//#define WHEEL_RADIUS (68.0f/2.0f)
-//#define ENCODER_DIST (200.0f/2.0f)
-
-// Paminable
-#define WHEEL_RADIUS (34.0f/2.0f)
-#define ENCODER_DIST 86.8f
 
 int main() {
 	// Init PicoSDK
@@ -179,7 +181,8 @@ int main() {
 	}
 }
 
-/*
+#else
+
 // Comm test
 int main() {
 	// Init PicoSDK
@@ -194,8 +197,11 @@ int main() {
 		busy_wait_us(1000000);
 	}
 }
-*/
-/*
+
+#endif
+
+#else
+
 // Music test
 const int channelNb = 2;
 Driver *drivers[channelNb] = {nullptr, nullptr};
@@ -346,4 +352,4 @@ int main() {
 		}
 	}
 }
-*/
+#endif

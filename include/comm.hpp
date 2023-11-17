@@ -22,14 +22,16 @@ private:
 	void i2cDeinit();
 
 	void resetCmd();
+	void resetRecvCmd();
+	void resetSendCmd();
 
-	size_t respDataSize;
-	uint8_t respData[MAX_DATA_SIZE];
+	// Temporary buffers to send the response
+	size_t sendDataSize;
+	uint8_t sendData[MAX_DATA_SIZE];
 
-	// Temporary buffers to parse the command
-	size_t cmdDataSize;
-	uint8_t cmdData[MAX_DATA_SIZE];
-	bool finishedRecv;
+	// Temporary buffers to receive the command
+	size_t recvDataSize;
+	uint8_t recvData[MAX_DATA_SIZE];
 
 	uint sdaPin;
 	uint sclPin;
