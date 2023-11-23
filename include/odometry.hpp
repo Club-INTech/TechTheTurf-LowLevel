@@ -12,8 +12,10 @@ public:
 	void update(float deltaMovLeft, float deltaMovRight);
 
 	// Current accumulated estimated position
+	// In cartesian
 	float x;
 	float y;
+	// In polar
 	float dst;
 	float theta;
 

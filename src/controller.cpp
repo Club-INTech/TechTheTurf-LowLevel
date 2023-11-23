@@ -3,32 +3,23 @@
 
 Controller::Controller(Odometry *odo) {
 	this->odo = odo;
-	this->targetTheta = 0.0f;
-	this->targetDst = 0.0f;
-	this->oldTargetTheta = 0.0f;
-	this->oldTargetDst = 0.0f;
+	this->reset();
 }
 
 Controller::~Controller() {
-
 }
 
 float Controller::getDstTarget() {
-	return this->targetDst;
-	/*if (abs(this->odo->theta - this->targetTheta) < 0.2f) {
-		this->oldTargetDst = this->targetDst;
-		return this->targetDst;
-	} else {
-		return this->oldTargetDst;
-	}*/
-
+	if (this->state == ControllerState::reachingTheta)
+		return this->odo->theta;
+	return this->target.dst;
 }
 
 float Controller::getAngleTarget() {
-	return this->targetTheta;
+	return this->target.theta;
 }
 
-void Controller::gotoXY(float x, float y) {
+/*void Controller::gotoXY(float x, float y) {
 	float dx = x - odo->x;
 	float dy = y - odo->y;
 
@@ -36,27 +27,50 @@ void Controller::gotoXY(float x, float y) {
 	float deltaDst = sqrt(dx * dx + dy * dy);
 
 	movePolar(deltaDst, deltaTheta);
+}*/
+
+bool Controller::canQueueMove() {
+	return !this->targetQueued;
+}
+
+void Controller::work() {
+	if (this->state == ControllerState::reachingTheta) {
+		if (abs(this->target.theta-this->odo->theta) > 0.4f)
+			return;
+		
+		this->state = ControllerState::reachingDst;
+	}
+
+	if (this->state == ControllerState::reachingDst) {
+		if (abs(this->target.dst-this->odo->dst) > 3.0f)
+			return;
+
+		this->state = ControllerState::reachedTarget;
+	}
+
+	if (this->state == ControllerState::reachedTarget && this->targetQueued) {
+		this->state = ControllerState::reachingTheta;
+		this->target = this->nextTarget;
+		this->nextTarget.reset();
+		this->targetQueued = false;
+	}
 }
 
 void Controller::movePolar(float dst, float theta) {
-	this->oldTargetTheta = this->targetTheta;
-	this->oldTargetDst = this->targetDst;
+	dst += this->target.dst;
+	theta += this->target.theta;
 
-	this->targetTheta += theta;
-	this->targetDst += dst;
+	setTarget(dst, theta);
 }
 
 void Controller::setTarget(float dst, float theta) {
-	this->oldTargetTheta = this->targetTheta;
-	this->oldTargetDst = this->targetDst;
-
-	this->targetTheta = theta;
-	this->targetDst = dst;	
+	this->target.set(dst, theta);
+	this->targetQueued = true;
 }
 
 void Controller::reset(float dst, float theta) {
-	this->targetDst = dst;
-	this->targetTheta = theta;
-	this->oldTargetDst = dst;
-	this->oldTargetTheta = theta;
+	this->target.set(dst, theta);
+	this->nextTarget.reset();
+	this->targetQueued = false;
+	this->state = ControllerState::reachingDst;
 }

@@ -2,9 +2,14 @@
 
 #ifdef ROBOT_PAMI
 
+// I2C
+#define I2C_ADDR 0x69
+
 // Pins
-#define I2C_SDA 0
-#define I2C_SCL 1
+//#define I2C_SDA 0
+//#define I2C_SCL 1
+#define I2C_SDA 12
+#define I2C_SCL 13
 
 #ifndef PAMI_CARTE_2A
 // Actual card pins
@@ -40,6 +45,9 @@
 #endif
 
 #ifdef ROBOT_DIDIER
+
+// I2C
+#define I2C_ADDR 0x69
 
 // Pins
 // Not really there but for testing

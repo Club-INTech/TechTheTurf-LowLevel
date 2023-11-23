@@ -18,9 +18,10 @@ public:
 				AccelLimiter *dstAlim, AccelLimiter *angleAlim, Controller *ctrl, float encoderWheelRadius);
 	~ControlLoop();
 
-	void work();
+	void start();
+	void stop();
 
-private:
+	void work();
 
 	int32_t lastCountLeft;
 	int32_t lastCountRight;
@@ -49,4 +50,5 @@ private:
 	Controller *ctrl;
 
 	float encoderWheelRadius;
+	bool running;
 };

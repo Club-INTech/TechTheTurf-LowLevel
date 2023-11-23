@@ -3,6 +3,8 @@
 #include <hardware/i2c.h>
 #include <pico/i2c_slave.h>
 
+#include <control_loop.hpp>
+
 // 100Khz
 #define I2C_BAUDRATE 100000
 #define MAX_DATA_SIZE 64
@@ -10,7 +12,7 @@
 class Comm
 {
 public:
-	Comm(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c);
+	Comm(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, ControlLoop *cl);
 	~Comm();
 	
 	void slaveHandler(i2c_slave_event_t event);
@@ -36,4 +38,6 @@ private:
 	uint sdaPin;
 	uint sclPin;
 	i2c_inst_t *i2c;
+
+	ControlLoop *cl;
 };

@@ -22,15 +22,15 @@ public:
 	void setValue(float currentValue);
 	float calculateAcc(float desired, float dt);
 
-private:
-
-	// Helper to clamp to PID min/max if exists
-	float clampVal(float val);
-
 	// Parameters of PID
 	float Kp,Ki,Kd;
 	float min,max;
 	float lpf;
+
+private:
+
+	// Helper to clamp to PID min/max if exists
+	float clampVal(float val);
 
 	// Accumulator value
 	float currentValue;

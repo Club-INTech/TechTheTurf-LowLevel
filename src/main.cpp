@@ -19,15 +19,18 @@
 #include <robot.hpp>
 
 //#define TEST_MUSIC
-#define TEST_COMM
+//#define TEST_COMM
+
+//#define SERIAL_COMM
 
 #ifndef TEST_MUSIC
 #ifndef TEST_COMM
 
+#ifdef SERIAL_COMM
 volatile float serialDst, serialAngle;
 volatile uint8_t serialCmd, serialSquare;
 
-void serial_proc() {
+void comm_thread() {
 	while (true) {
 		switch (getchar()) {
 			case 'a':
@@ -57,6 +60,21 @@ void serial_proc() {
 		}
 	}
 }
+#else
+
+void comm_thread() {
+	// Grab the ref from the other core
+	ControlLoop *cl = (ControlLoop*)multicore_fifo_pop_blocking();
+
+	// Init HL Comms on other core to handle interrupts there
+	Comm *hlComm = new Comm(I2C_SDA, I2C_SCL, I2C_ADDR, i2c0, cl);
+
+	while (true) {
+		busy_wait_us(1000000);
+	}
+}
+
+#endif
 
 #define ASSERV_PERIOD_US 2000
 
@@ -65,9 +83,6 @@ int main() {
 	stdio_init_all();
 	//sleep_ms(2000);
 	//printf("Hello\n");
-
-	// Init HL Comms
-	//Comm *hlComm = new Comm(I2C_SDA, I2C_SCL, 0x69, i2c0);
 
 	// Init encoders & drivers
 	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, false, 0);
@@ -106,7 +121,12 @@ int main() {
 
 	uint nb = 0;
 
-	multicore_launch_core1(serial_proc);
+	multicore_launch_core1(comm_thread);
+
+#ifndef SERIAL_COMM
+	// Send the ControlLoop ref over to the other core
+	multicore_fifo_push_blocking((uint32_t)cl);
+#endif
 
 #if 0
 	while (true) {
@@ -130,6 +150,7 @@ int main() {
 
 	while (true) {
 		absolute_time_t start = get_absolute_time();
+#ifdef SERIAL_COMM
 		if (serialCmd != 0) {
 			if (serialCmd == 1)  {
 				ctrl->movePolar(serialDst, (serialAngle / 180.0f) * M_PI);
@@ -145,9 +166,7 @@ int main() {
 				ctrl->setTarget(serialDst, serialAngle);
 				serialCmd = 0;
 			} else if (serialCmd == 4) {
-				float diffDst = abs(ctrl->getDstTarget()-odo->dst);
-				float diffAngle = abs(ctrl->getAngleTarget()-odo->theta);
-				if (diffDst < 2.0f && diffAngle < 0.3f) {
+				if (ctrl->canQueueMove()) {
 					if (serialSquare%2 == 0) {
 						ctrl->movePolar(serialDst, 0.0f);
 					} else if (serialSquare%2 == 1) {
@@ -159,6 +178,7 @@ int main() {
 					serialCmd = 0;
 			}
 		}
+#endif
 		//printf("%i %f\n", nb, (((float)std::min(nb,1000u))/1000.0f)*1.0f);
 		//if (nb == 200)
 		//	ctrl->movePolar(-100.0f,0);

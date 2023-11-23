@@ -33,6 +33,7 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->lastCountRight = 0;
 	this->lSpeedTarget = 0;
 	this->rSpeedTarget = 0;
+	this->running = false;
 }
 
 ControlLoop::~ControlLoop() {
@@ -40,8 +41,22 @@ ControlLoop::~ControlLoop() {
 	drvRight->setPwm(0.0);
 }
 
+void ControlLoop::start() {
+	absolute_time_t time = get_absolute_time();
+	this->lastTime = time;
+	this->lastTimePos = time;
+	this->running = true;
+}
+
+void ControlLoop::stop() {
+	this->running = false;
+}
+
 void ControlLoop::work() {
 	static uint counter = 0;
+
+	if (!this->running)
+		return;
 
 	// Calculate Delta time & update last time
 	absolute_time_t time = get_absolute_time();
@@ -94,7 +109,7 @@ void ControlLoop::work() {
 	float lSpeed = this->lSpeedPid->calculate(this->lSpeedTarget, lCurrentSpeed, dt);
 	float rSpeed = this->rSpeedPid->calculate(this->rSpeedTarget, rCurrentSpeed, dt);
 
-	printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
+	//printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
 
 	// Write speed to motors
 	this->drvLeft->setPwm(lSpeed);

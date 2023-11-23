@@ -2,6 +2,28 @@
 
 #include <odometry.hpp>
 
+struct Target
+{
+	float dst;
+	float theta;
+
+	void set(float dst, float theta) {
+		this->dst = dst;
+		this->theta = theta;
+	}
+
+	void reset() {
+		set(0, 0);
+	}
+};
+
+enum ControllerState
+{
+	reachingTheta,
+	reachingDst,
+	reachedTarget
+};
+
 class Controller
 {
 public:
@@ -10,7 +32,10 @@ public:
 
 	float getDstTarget();
 	float getAngleTarget();
-	void gotoXY(float x, float y);
+
+	void work();
+
+	bool canQueueMove();
 	void movePolar(float dst, float theta);
 	void setTarget(float dst, float theta);
 	void reset(float dst=0, float theta=0);
@@ -18,8 +43,8 @@ public:
 private:
 	Odometry *odo;
 
-	float targetDst;
-	float targetTheta;
-	float oldTargetTheta;
-	float oldTargetDst;
+	Target nextTarget;
+	Target target;
+	bool targetQueued;
+	ControllerState state;
 };
