@@ -6,10 +6,10 @@
 #define I2C_ADDR 0x69
 
 // Pins
-//#define I2C_SDA 0
-//#define I2C_SCL 1
-#define I2C_SDA 12
-#define I2C_SCL 13
+#define I2C_SDA 0
+#define I2C_SCL 1
+//#define I2C_SDA 12
+//#define I2C_SCL 13
 
 #ifndef PAMI_CARTE_2A
 // Actual card pins
@@ -42,6 +42,12 @@
 #define WHEEL_RADIUS (34.0f/2.0f)
 #define ENCODER_DIST 86.8f
 
+#define ENCODER_LEFT_REVERSE false
+#define ENCODER_RIGHT_REVERSE false
+
+#define DRIVER_LEFT_REVERSE true
+#define DRIVER_RIGHT_REVERSE true
+
 #endif
 
 #ifdef ROBOT_DIDIER
@@ -68,5 +74,11 @@
 
 #define WHEEL_RADIUS (68.0f/2.0f)
 #define ENCODER_DIST (200.0f/2.0f)
+
+#define ENCODER_LEFT_REVERSE false
+#define ENCODER_RIGHT_REVERSE false
+
+#define DRIVER_LEFT_REVERSE false
+#define DRIVER_RIGHT_REVERSE false
 
 #endif

@@ -53,7 +53,7 @@ pico_enable_stdio_uart(pami 0)
 pico_generate_pio_header(pami ${CMAKE_CURRENT_LIST_DIR}/pio/quadrature_encoder.pio)
 
 # pull in common dependencies
-target_link_libraries(pami pico_i2c_slave pico_stdlib pico_multicore pico_rand hardware_pio hardware_i2c hardware_pwm)
+target_link_libraries(pami pico_i2c_slave pico_stdlib pico_multicore pico_sync pico_rand hardware_pio hardware_i2c hardware_pwm)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(pami)

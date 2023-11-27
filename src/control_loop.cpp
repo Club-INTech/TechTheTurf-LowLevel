@@ -34,6 +34,7 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->lSpeedTarget = 0;
 	this->rSpeedTarget = 0;
 	this->running = false;
+	mutex_init(&this->mutex);
 }
 
 ControlLoop::~ControlLoop() {
@@ -42,14 +43,32 @@ ControlLoop::~ControlLoop() {
 }
 
 void ControlLoop::start() {
+	if (this->running)
+		return;
+	mutex_try_enter(&this->mutex, nullptr);
 	absolute_time_t time = get_absolute_time();
 	this->lastTime = time;
 	this->lastTimePos = time;
+	this->encLeft->reset();
+	this->encRight->reset();
+	this->odo->reset();
+	this->ctrl->reset();
+	this->dstPid->reset();
+	this->anglePid->reset();
+	this->lSpeedPid->reset();
+	this->rSpeedPid->reset();
 	this->running = true;
+	mutex_exit(&this->mutex);
 }
 
 void ControlLoop::stop() {
+	if (!this->running)
+		return;
+	mutex_try_enter(&this->mutex, nullptr);
 	this->running = false;
+	this->drvLeft->setPwm(0.0f);
+	this->drvRight->setPwm(0.0f);
+	mutex_exit(&this->mutex);
 }
 
 void ControlLoop::work() {
@@ -57,6 +76,8 @@ void ControlLoop::work() {
 
 	if (!this->running)
 		return;
+
+	mutex_try_enter(&this->mutex, nullptr);
 
 	// Calculate Delta time & update last time
 	absolute_time_t time = get_absolute_time();
@@ -116,4 +137,5 @@ void ControlLoop::work() {
 	this->drvRight->setPwm(rSpeed);
 
 	counter++;
+	mutex_exit(&this->mutex);
 }

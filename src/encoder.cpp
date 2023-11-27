@@ -53,6 +53,21 @@ float Encoder::getRevolutions() {
 	return convertRevolutions(getCount());
 }
 
+void Encoder::reset(int32_t cnt) {
+	pio_sm_set_enabled(this->pio, this->stateMachine, false);
+	pio_sm_drain_tx_fifo(this->pio, this->stateMachine);
+	// From https://github.com/zapta/simple_stepper_motor_analyzer/blob/master/platformio/src/display/tft_driver.cpp#L65
+	static const uint instr_shift = pio_encode_in(pio_y, 4);
+	static const uint instr_mov = pio_encode_mov(pio_y, pio_isr);
+	for (int i = 7; i >= 0; i--) {
+		const uint32_t nibble = (cnt >> (i * 4)) & 0xf;
+		pio_sm_exec(this->pio, this->stateMachine, pio_encode_set(pio_y, nibble));
+		pio_sm_exec(this->pio, this->stateMachine, instr_shift);
+	}
+	pio_sm_exec(this->pio, this->stateMachine, instr_mov);
+	pio_sm_set_enabled(this->pio, this->stateMachine, true);
+}
+
 // max_step_rate is used to lower the clock of the state machine to save power
 // if the application doesn't require a very high sampling rate. Passing zero
 // will set the clock to the maximum

@@ -11,6 +11,7 @@ public:
 	int32_t getCount();
 	float convertRevolutions(int32_t ticks);
 	float getRevolutions();
+	void reset(int32_t cnt=0);
 
 private:
 

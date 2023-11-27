@@ -2,6 +2,8 @@
 
 #include <pico/stdlib.h>
 #include <pico/time.h>
+#include <pico/sync.h>
+
 #include <encoder.hpp>
 #include <driver.hpp>
 #include <pid.hpp>
@@ -48,6 +50,8 @@ public:
 	AccelLimiter *angleAlim;
 
 	Controller *ctrl;
+
+	mutex_t mutex;
 
 	float encoderWheelRadius;
 	bool running;
