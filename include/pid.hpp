@@ -11,16 +11,12 @@ public:
 	// Config & utils
 	void setPID(float Kp, float Ki, float Kd);
 	void setClamp(float min, float max);
+	// LPF in Hz
 	void setLpf(float lpf);
 	void reset();
 
 	// Calc using straight values
 	float calculate(float desired, float current, float dt);
-
-	// Calc using the accumulator
-	void accumulate(float delta);
-	void setValue(float currentValue);
-	float calculateAcc(float desired, float dt);
 
 	// Parameters of PID
 	float Kp,Ki,Kd;
@@ -31,9 +27,6 @@ private:
 
 	// Helper to clamp to PID min/max if exists
 	float clampVal(float val);
-
-	// Accumulator value
-	float currentValue;
 
 	// State of PID
 	float integral;

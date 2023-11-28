@@ -89,16 +89,12 @@ static inline PID *getPid(ControlLoop *cl, uint8_t idx) {
 }
 
 void Comm::handleCmd(uint8_t *data, size_t size) {
-	printf("handle size: %i\n", size);
-
-	if (size < 1) // ????
-		return;
-
 	uint8_t fbyte = data[0];
 
 	uint8_t cmd = fbyte&0xF;
 	uint8_t subcmd = (fbyte>>4)&0xF;
 
+	//printf("handle size: %i\n", size);
 	//printf("cmd: %i, subcmd:%i\n", cmd, subcmd);
 
 	// Floats need to be aligned, can't just cast
@@ -106,14 +102,12 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 	PID *pid;
 
 	switch (cmd) {
+		// Write operations, could be deferred from IRQ
 		case 0: // Turn ON/OFF
-			if (data[1]) {
+			if (data[1])
 				this->cl->start();
-				printf("Allumé\n");
-			} else {
+			else
 				this->cl->stop();
-				printf("Éteint\n");
-			}
 			break;
 		case 1: // Move
 			memcpy(&f1, &data[1], sizeof(float));
@@ -129,6 +123,7 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 			//printf("pid %i kp %f ki %f kd %f\n", subcmd, f1, f2, f3);
 			pid->setPID(f1, f2, f3);
 			break;
+		// Read operations, can't be deferred
 		case 2: // Get PID
 			pid = getPid(this->cl, subcmd);
 			this->sendDataSize = 4*3;
@@ -138,24 +133,11 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 			break;
 		case 3: // Get theta, rho
 			this->sendDataSize = 4*2;
-			memcpy(&this->sendData[0], &this->cl->odo->theta, sizeof(float));
-			memcpy(&this->sendData[4], &this->cl->odo->dst, sizeof(float));
+			memcpy(&this->sendData[0], &this->cl->odo->dst, sizeof(float));
+			memcpy(&this->sendData[4], &this->cl->odo->theta, sizeof(float));
 		default:
 			break;
 	}
-
-	/*if (size < 1)
-		return;
-
-	if (data[0] == 0)
-		return;
-	
-	this->sendDataSize = size;
-	
-	for (size_t i=0;i<size;i++) {
-		//printf("%i: %i\n", i, data[i]);
-		this->sendData[i] = data[i];
-	}*/
 }
 
 void Comm::slaveHandler(i2c_slave_event_t event) {

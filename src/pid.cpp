@@ -68,29 +68,18 @@ float PID::calculate(float desired, float current, float dt) {
 	this->lastInput = current;
 
 	// Apply LPF if needed
-	if (this->lpf != 0)
-		output = output * 1/this->lpf + this->lastOutput * (1 - 1/this->lpf);
+	if (this->lpf > 0) {
+		float alpha = 1.0f/(this->lpf*dt + 1.0f);
+		output = alpha*this->lastOutput + (1.0f - alpha)*output;
+	}
 
 	this->lastOutput = output;
 
 	return output;
 }
 
-void PID::setValue(float currentValue) {
-	this->currentValue = currentValue;
-}
-
-void PID::accumulate(float delta) {
-	this->currentValue += delta;
-}
-
-float PID::calculateAcc(float desired, float dt) {
-	return calculate(desired, this->currentValue, dt);
-}
-
 void PID::reset() {
 	this->integral = 0;
 	this->lastInput = 0;
-	this->currentValue = 0;
 	this->lastOutput = 0;
 }
