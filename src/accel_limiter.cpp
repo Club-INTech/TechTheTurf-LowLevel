@@ -3,7 +3,7 @@
 	
 AccelLimiter::AccelLimiter(float max) {
 	this->maxAccel = max;
-	this->lastValue = 0;
+	reset();
 }
 
 AccelLimiter::~AccelLimiter() {
@@ -35,4 +35,8 @@ float AccelLimiter::limitValue(float val, float dt) {
 	float max = dt * this->maxAccel;
 
 	return std::clamp(accel, -max, max);
+}
+
+void AccelLimiter::reset() {
+	this->lastValue = 0;
 }

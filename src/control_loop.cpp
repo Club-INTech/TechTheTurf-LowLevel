@@ -34,6 +34,7 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->lSpeedTarget = 0;
 	this->rSpeedTarget = 0;
 	this->running = false;
+
 	mutex_init(&this->mutex);
 }
 
@@ -57,6 +58,12 @@ void ControlLoop::start() {
 	this->anglePid->reset();
 	this->lSpeedPid->reset();
 	this->rSpeedPid->reset();
+	this->dstAlim->reset();
+	this->angleAlim->reset();
+	this->lPll->reset();
+	this->rPll->reset();
+	this->lastCountLeft = 0;
+	this->lastCountRight = 0;
 	this->running = true;
 	mutex_exit(&this->mutex);
 }
@@ -115,8 +122,10 @@ void ControlLoop::work() {
 		this->lastTimePos = time;
 		
 		// Calculate virtual polar motor targets
-		float dstSpeedTarget = dstAlim->limit(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), dtPos);
-		float angleSpeedTarget = angleAlim->limit(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), dtPos);
+		float dstSpeedTarget = this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos);
+		float angleSpeedTarget = this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos);
+		//float dstSpeedTarget = dstAlim->limit(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), dtPos);
+		//float angleSpeedTarget = angleAlim->limit(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), dtPos);
 		
 		// Real motor speed targets
 		this->lSpeedTarget = dstSpeedTarget - angleSpeedTarget;

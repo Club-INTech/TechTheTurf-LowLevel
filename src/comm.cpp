@@ -98,6 +98,7 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 	//printf("cmd: %i, subcmd:%i\n", cmd, subcmd);
 
 	// Floats need to be aligned, can't just cast
+	uint32_t uint1,uint2;
 	float f1, f2, f3;
 	PID *pid;
 
@@ -123,18 +124,45 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 			//printf("pid %i kp %f ki %f kd %f\n", subcmd, f1, f2, f3);
 			pid->setPID(f1, f2, f3);
 			break;
+		case 6: // Telem on/off
+			if (subcmd < 4) {
+				pid = getPid(this->cl, subcmd);
+				if (data[1])
+					pid->telem->start();
+				else
+					pid->telem->stop();
+			}
+			break;
 		// Read operations, can't be deferred
 		case 2: // Get PID
 			pid = getPid(this->cl, subcmd);
-			this->sendDataSize = 4*3;
+			this->sendDataSize = 3*sizeof(float);
 			memcpy(&this->sendData[0], &pid->Kp, sizeof(float));
 			memcpy(&this->sendData[4], &pid->Ki, sizeof(float));
 			memcpy(&this->sendData[4*2], &pid->Kd, sizeof(float));
 			break;
 		case 3: // Get theta, rho
-			this->sendDataSize = 4*2;
+			this->sendDataSize = 2*sizeof(float);
 			memcpy(&this->sendData[0], &this->cl->odo->dst, sizeof(float));
 			memcpy(&this->sendData[4], &this->cl->odo->theta, sizeof(float));
+			break;
+		case 7: // Get telem data
+			if (subcmd < 4) {
+				pid = getPid(this->cl, subcmd);
+				this->sendDataSize = pid->telem->elemSize();
+				pid->telem->getInBuffer(&this->sendData[0], MAX_DATA_SIZE);
+			}
+			break;
+		case 8: // Get telem info
+			if (subcmd < 4) {
+				pid = getPid(this->cl, subcmd);
+				uint1 = pid->telem->size();
+				uint2 = pid->telem->elemSize();
+				memcpy(&this->sendData[0], &uint1, sizeof(uint32_t));
+				memcpy(&this->sendData[4], &uint2, sizeof(uint32_t));
+				this->sendDataSize = 2*sizeof(uint32_t);
+			}
+			break;
 		default:
 			break;
 	}
@@ -165,13 +193,14 @@ void Comm::slaveHandler(i2c_slave_event_t event) {
 			if (this->sendDataSize == 0) // ?????
 				return;
 
-			for (i=0;i<this->sendDataSize;i++) {
+			/*for (i=0;i<this->sendDataSize;i++) {
 				do {
 					nb = i2c_get_write_available(this->i2c);
 				} while (nb == 0);
 
 				i2c_write_byte_raw(this->i2c, this->sendData[i]);
-			}
+			}*/
+			i2c_write_raw_blocking(this->i2c, (uint8_t*)&this->sendData, this->sendDataSize);
 
 			resetSendCmd();
 			break;

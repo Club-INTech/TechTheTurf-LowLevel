@@ -3,10 +3,12 @@
 
 // https://www.pm-robotix.eu/2022/01/19/ameliorer-vos-regulateurs-pid/
 
-PID::PID(float Kp, float Ki, float Kd, float lpf, float min, float max) {
+PID::PID(float Kp, float Ki, float Kd, float ramp, float lpf, float min, float max) {
+	this->telem = new Telemetry<PIDTelemData>(500);
 	setPID(Kp,Ki,Kd);
 	setClamp(min,max);
 	setLpf(lpf);
+	setRamp(ramp);
 	reset();
 }
 
@@ -24,10 +26,15 @@ void PID::setClamp(float min, float max) {
 	this->min = min;
 	this->integral = clampVal(integral);
 	this->lastOutput = clampVal(this->lastOutput);
+	this->lastOutputRamp = clampVal(this->lastOutputRamp);
 }
 
 void PID::setLpf(float lpf) {
 	this->lpf = lpf;
+}
+
+void PID::setRamp(float ramp) {
+	this->outRamp = ramp;
 }
 
 float PID::clampVal(float val) {
@@ -67,6 +74,17 @@ float PID::calculate(float desired, float current, float dt) {
 	// Save old input for derivative
 	this->lastInput = current;
 
+	// Apply derivative limiter
+	if (this->outRamp > 0) {
+		float outRate = (output - this->lastOutputRamp)/dt;
+		if (outRate > this->outRamp)
+			output = this->lastOutputRamp + this->outRamp * dt;
+		else if (outRate < -this->outRamp)
+			output = this->lastOutputRamp - this->outRamp * dt;
+	}
+
+	this->lastOutputRamp = output;
+
 	// Apply LPF if needed
 	if (this->lpf > 0) {
 		float alpha = 1.0f/(this->lpf*dt + 1.0f);
@@ -75,6 +93,8 @@ float PID::calculate(float desired, float current, float dt) {
 
 	this->lastOutput = output;
 
+	this->telem->add(PIDTelemData(desired, current, output), dt);
+
 	return output;
 }
 
@@ -82,4 +102,5 @@ void PID::reset() {
 	this->integral = 0;
 	this->lastInput = 0;
 	this->lastOutput = 0;
+	this->lastOutputRamp = 0;
 }

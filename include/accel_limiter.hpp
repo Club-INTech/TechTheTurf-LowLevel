@@ -7,6 +7,7 @@ public:
 	~AccelLimiter();
 
 	float limit(float val, float dt);
+	void reset();
 
 private:
 	float limitValue(float val, float dt);

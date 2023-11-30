@@ -5,8 +5,8 @@
 
 #include <control_loop.hpp>
 
-// 100Khz
-#define I2C_BAUDRATE 100000
+// 1Mhz
+#define I2C_BAUDRATE 1000000
 #define MAX_DATA_SIZE 64
 
 class Comm

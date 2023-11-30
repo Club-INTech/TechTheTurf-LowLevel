@@ -98,7 +98,7 @@ int main() {
 	// Setup PIDs
 	PID *lSpeedPid = new PID(0.001f, 0.002f, 0.00005f);
 	PID *rSpeedPid = new PID(0.001f, 0.002f, 0.00005f);
-	PID *dstPid = new PID(10.0f, 0.5f, 0.05f);
+	PID *dstPid = new PID(10.0f, 0.5f, 0.05f/*, 1000.0f*/);
 	PID *anglePid = new PID(1000.0f, 2.0f, 0.5f);
 
 	// Setup PLLs
