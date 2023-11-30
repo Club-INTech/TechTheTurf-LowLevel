@@ -13,6 +13,7 @@ PID::PID(float Kp, float Ki, float Kd, float ramp, float lpf, float min, float m
 }
 
 PID::~PID() {
+	delete this->telem;
 }
 
 void PID::setPID(float Kp, float Ki, float Kd) {
