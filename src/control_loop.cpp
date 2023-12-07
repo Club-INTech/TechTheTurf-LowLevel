@@ -122,10 +122,11 @@ void ControlLoop::work() {
 		this->lastTimePos = time;
 		
 		// Calculate virtual polar motor targets
-		float dstSpeedTarget = this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos);
-		float angleSpeedTarget = this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos);
-		//float dstSpeedTarget = dstAlim->limit(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), dtPos);
-		//float angleSpeedTarget = angleAlim->limit(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), dtPos);
+		//float dstSpeedTarget = this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos);
+		//float angleSpeedTarget = this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos);
+
+		float dstSpeedTarget = dstAlim->limit(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), dtPos);
+		float angleSpeedTarget = angleAlim->limit(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), dtPos);
 		
 		// Real motor speed targets
 		this->lSpeedTarget = dstSpeedTarget - angleSpeedTarget;

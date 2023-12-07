@@ -35,7 +35,7 @@ bool Controller::canQueueMove() {
 
 void Controller::work() {
 	if (this->state == ControllerState::reachingTheta) {
-		if (abs(this->target.theta-this->odo->theta) > 0.4f)
+		if (abs(this->target.theta-this->odo->theta) > (10.0f*(M_PI/180.0f)))
 			return;
 		
 		this->state = ControllerState::reachingDst;
@@ -50,8 +50,8 @@ void Controller::work() {
 
 	if (this->state == ControllerState::reachedTarget && this->targetQueued) {
 		this->state = ControllerState::reachingTheta;
-		this->target = this->nextTarget;
-		this->nextTarget.reset();
+		//this->target = this->nextTarget;
+		//this->nextTarget.reset();
 		this->targetQueued = false;
 	}
 }
