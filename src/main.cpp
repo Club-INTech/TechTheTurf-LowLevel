@@ -70,7 +70,8 @@ void comm_thread() {
 	Comm *hlComm = new Comm(I2C_SDA, I2C_SCL, I2C_ADDR, i2c0, cl);
 
 	while (true) {
-		busy_wait_us(1000000);
+		hlComm->work();
+		busy_wait_us(500);
 	}
 }
 

@@ -5,6 +5,8 @@
 
 #include <pid.hpp>
 
+#include <cppcrc.h>
+
 static Comm *i2cComm[2] = {nullptr, nullptr};
 
 void dispatchSlave(i2c_inst_t *i2c, i2c_slave_event_t event) {
@@ -98,7 +100,6 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 	//printf("cmd: %i, subcmd:%i\n", cmd, subcmd);
 
 	// Floats need to be aligned, can't just cast
-	uint32_t uint1,uint2;
 	float f1, f2, f3;
 	PID *pid;
 
@@ -128,9 +129,9 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 			if (subcmd < 4) {
 				pid = getPid(this->cl, subcmd);
 				if (data[1])
-					pid->telem->start();
+					pid->telem.start();
 				else
-					pid->telem->stop();
+					pid->telem.stop();
 			}
 			break;
 		case 9: // Set target
@@ -151,23 +152,6 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 			memcpy(&this->sendData[0], &this->cl->odo->dst, sizeof(float));
 			memcpy(&this->sendData[4], &this->cl->odo->theta, sizeof(float));
 			break;
-		case 7: // Get telem data
-			if (subcmd < 4) {
-				pid = getPid(this->cl, subcmd);
-				this->sendDataSize = pid->telem->elemSize();
-				pid->telem->getInBuffer(&this->sendData[0], MAX_DATA_SIZE);
-			}
-			break;
-		case 8: // Get telem info
-			if (subcmd < 4) {
-				pid = getPid(this->cl, subcmd);
-				uint1 = pid->telem->size();
-				uint2 = pid->telem->elemSize();
-				memcpy(&this->sendData[0], &uint1, sizeof(uint32_t));
-				memcpy(&this->sendData[4], &uint2, sizeof(uint32_t));
-				this->sendDataSize = 2*sizeof(uint32_t);
-			}
-			break;
 		case 10: // Ready for next move
 			this->sendDataSize = 1;
 			this->sendData[0] = this->cl->ctrl->canQueueMove();
@@ -177,8 +161,25 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 	}
 }
 
+void Comm::work() {
+	for (uint8_t idx=0; idx<4; idx++) {
+		PID *pid = getPid(this->cl, idx);
+		size_t size = pid->telem.elemSize();
+		while (pid->telem.size() > 0) {
+			pid->telem.getInBuffer(&this->serialBuffer[0], MAX_DATA_SIZE, idx);
+			putchar('\xDE');
+			putchar('\xAD');
+			for (size_t i=0; i<size; i++)
+				putchar(this->serialBuffer[i]);
+			uint32_t crc = CRC32::CRC32::calc(&this->serialBuffer[0], size);
+			for (size_t i=0; i<4; i++)
+				putchar(((uint8_t*)(&crc))[i]);
+		}
+	}
+}
+
 void Comm::slaveHandler(i2c_slave_event_t event) {
-	size_t nb, i;
+	size_t nb;
 	uint8_t byte;
 	switch (event) {
 		// Data from master is available for reading. Slave must read from Rx FIFO.

@@ -4,7 +4,6 @@
 // https://www.pm-robotix.eu/2022/01/19/ameliorer-vos-regulateurs-pid/
 
 PID::PID(float Kp, float Ki, float Kd, float ramp, float lpf, float min, float max) {
-	this->telem = new Telemetry<PIDTelemData>(500);
 	setPID(Kp,Ki,Kd);
 	setClamp(min,max);
 	setLpf(lpf);
@@ -13,7 +12,6 @@ PID::PID(float Kp, float Ki, float Kd, float ramp, float lpf, float min, float m
 }
 
 PID::~PID() {
-	delete this->telem;
 }
 
 void PID::setPID(float Kp, float Ki, float Kd) {
@@ -94,7 +92,7 @@ float PID::calculate(float desired, float current, float dt) {
 
 	this->lastOutput = output;
 
-	this->telem->add(PIDTelemData(desired, current, output), dt);
+	this->telem.add(PIDTelemData(desired, current, output), dt);
 
 	return output;
 }

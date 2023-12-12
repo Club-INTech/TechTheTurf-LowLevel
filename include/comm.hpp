@@ -14,6 +14,8 @@ class Comm
 public:
 	Comm(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, ControlLoop *cl);
 	~Comm();
+
+	void work();
 	
 	void slaveHandler(i2c_slave_event_t event);
 private:
@@ -27,11 +29,14 @@ private:
 	void resetRecvCmd();
 	void resetSendCmd();
 
-	// Temporary buffers to send the response
+	// Temporary buffer for Serial telemetry
+	uint8_t serialBuffer[MAX_DATA_SIZE];
+
+	// Temporary buffer to send the response
 	size_t sendDataSize;
 	uint8_t sendData[MAX_DATA_SIZE];
 
-	// Temporary buffers to receive the command
+	// Temporary buffer to receive the command
 	size_t recvDataSize;
 	uint8_t recvData[MAX_DATA_SIZE];
 

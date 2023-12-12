@@ -12,15 +12,16 @@ struct TelemPacket
 	T data;
 };
 
-template <class T>
+template <class T, size_t bufferSize>
 class Telemetry
 {
 public:
-	Telemetry(size_t bufferSize) {
-		this->bufferSize = bufferSize;
+	Telemetry() {
 		mutex_init(&this->mutex);
 		this->running = false;
 		this->time = 0;
+		this->downsample = 4;
+		this->idx = 0;
 		stop();
 	}
 
@@ -63,13 +64,13 @@ public:
 		mutex_exit(&this->mutex);
 	}
 
-	void getInBuffer(uint8_t *buffer, size_t size) {
-		if (size < 5)
+	void getInBuffer(uint8_t *buffer, size_t size, uint8_t telemIdx) {
+		if (size < 3)
 			return;
 		TelemPacket<T> elem = get();
-		uint32_t sizeVal = this->size()&0xFFFF;
-		memcpy(&buffer[0], &sizeVal, sizeof(uint32_t));
-		memcpy(&buffer[4], &elem, sizeof(TelemPacket<T>));
+		buffer[0] = sizeof(TelemPacket<T>);
+		buffer[1] = telemIdx;
+		memcpy(&buffer[2], &elem, sizeof(TelemPacket<T>));
 	}
 
 	TelemPacket<T> get() {
@@ -85,7 +86,11 @@ public:
 	}
 
 	size_t elemSize() {
-		return 4 + sizeof(TelemPacket<T>);
+		return 2 + sizeof(TelemPacket<T>);
+	}
+
+	void setDownsample(uint8_t ds) {
+		this->downsample = ds;
 	}
 
 	void flush() {
@@ -98,10 +103,17 @@ public:
 private:
 
 	void addInner(T val, float ts) {
+		if (this->downsample > 0) {
+			if (this->idx++ == this->downsample) {
+				this->idx = 0;
+			} else {
+				return;
+			}
+		}
 		TelemPacket<T> dat;
 		dat.data = val;
 		dat.timestamp = ts;
-		if (size() >= this->bufferSize)
+		if (size() >= bufferSize)
 			this->queue.pop();
 		this->queue.push(dat);
 	}
@@ -109,8 +121,9 @@ private:
 	float time;
 
 	bool running;
+	uint8_t downsample;
+	uint8_t idx;
 	
-	size_t bufferSize;
 	std::queue<TelemPacket<T>> queue;
 	mutex_t mutex;
 };

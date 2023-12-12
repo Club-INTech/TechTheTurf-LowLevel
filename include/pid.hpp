@@ -40,7 +40,7 @@ public:
 	float min,max;
 	float lpf,outRamp;
 
-	Telemetry<PIDTelemData> *telem;
+	Telemetry<PIDTelemData,500> telem;
 private:
 
 	// Helper to clamp to PID min/max if exists
