@@ -86,6 +86,8 @@ void ControlLoop::work() {
 
 	mutex_try_enter(&this->mutex, nullptr);
 
+	ctrl->work();
+
 	// Calculate Delta time & update last time
 	absolute_time_t time = get_absolute_time();
 	float dt = ((float)absolute_time_diff_us(this->lastTime, time))/((float)1e6);

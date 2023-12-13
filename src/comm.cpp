@@ -154,7 +154,7 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 			break;
 		case 10: // Ready for next move
 			this->sendDataSize = 1;
-			this->sendData[0] = this->cl->ctrl->canQueueMove();
+			this->sendData[0] = this->cl->ctrl->isReady();
 			break;
 		default:
 			break;

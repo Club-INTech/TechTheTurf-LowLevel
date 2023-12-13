@@ -35,7 +35,7 @@ public:
 
 	void work();
 
-	bool canQueueMove();
+	bool isReady();
 	void movePolar(float dst, float theta);
 	void setTarget(float dst, float theta);
 	void reset(float dst=0, float theta=0);
@@ -43,8 +43,6 @@ public:
 private:
 	Odometry *odo;
 
-	Target nextTarget;
 	Target target;
-	bool targetQueued;
 	ControllerState state;
 };

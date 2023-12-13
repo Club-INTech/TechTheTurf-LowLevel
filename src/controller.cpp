@@ -11,7 +11,7 @@ Controller::~Controller() {
 
 float Controller::getDstTarget() {
 	if (this->state == ControllerState::reachingTheta)
-		return this->odo->theta;
+		return this->odo->dst;
 	return this->target.dst;
 }
 
@@ -29,11 +29,14 @@ float Controller::getAngleTarget() {
 	movePolar(deltaDst, deltaTheta);
 }*/
 
-bool Controller::canQueueMove() {
-	return !this->targetQueued;
+bool Controller::isReady() {
+	return this->state == ControllerState::reachedTarget;
 }
 
 void Controller::work() {
+	if (this->state == ControllerState::reachedTarget)
+		return;
+
 	if (this->state == ControllerState::reachingTheta) {
 		if (abs(this->target.theta-this->odo->theta) > (10.0f*(M_PI/180.0f)))
 			return;
@@ -47,13 +50,6 @@ void Controller::work() {
 
 		this->state = ControllerState::reachedTarget;
 	}
-
-	if (this->state == ControllerState::reachedTarget && this->targetQueued) {
-		this->state = ControllerState::reachingTheta;
-		//this->target = this->nextTarget;
-		//this->nextTarget.reset();
-		this->targetQueued = false;
-	}
 }
 
 void Controller::movePolar(float dst, float theta) {
@@ -65,12 +61,10 @@ void Controller::movePolar(float dst, float theta) {
 
 void Controller::setTarget(float dst, float theta) {
 	this->target.set(dst, theta);
-	this->targetQueued = true;
+	this->state = ControllerState::reachingTheta;
 }
 
 void Controller::reset(float dst, float theta) {
 	this->target.set(dst, theta);
-	this->nextTarget.reset();
-	this->targetQueued = false;
-	this->state = ControllerState::reachingDst;
+	this->state = ControllerState::reachedTarget;
 }
