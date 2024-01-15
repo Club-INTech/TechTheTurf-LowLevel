@@ -40,7 +40,7 @@
 // Mech constants
 // Paminable
 #define WHEEL_RADIUS (34.0f/2.0f)
-#define ENCODER_DIST 86.8f
+#define ENCODER_DIST 92.5f
 
 #define ENCODER_LEFT_REVERSE false
 #define ENCODER_RIGHT_REVERSE false

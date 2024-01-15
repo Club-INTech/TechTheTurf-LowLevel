@@ -11,7 +11,7 @@ Controller::~Controller() {
 
 float Controller::getDstTarget() {
 	if (this->state == ControllerState::reachingTheta)
-		return this->odo->dst;
+		return this->oldTarget.dst;
 	return this->target.dst;
 }
 
@@ -38,14 +38,14 @@ void Controller::work() {
 		return;
 
 	if (this->state == ControllerState::reachingTheta) {
-		if (abs(this->target.theta-this->odo->theta) > (10.0f*(M_PI/180.0f)))
+		if (abs(this->target.theta-this->odo->theta) > (2.0f*(M_PI/180.0f)))
 			return;
 		
 		this->state = ControllerState::reachingDst;
 	}
 
 	if (this->state == ControllerState::reachingDst) {
-		if (abs(this->target.dst-this->odo->dst) > 3.0f)
+		if (abs(this->target.dst-this->odo->dst) > 20.0f)
 			return;
 
 		this->state = ControllerState::reachedTarget;
@@ -60,11 +60,13 @@ void Controller::movePolar(float dst, float theta) {
 }
 
 void Controller::setTarget(float dst, float theta) {
+	this->oldTarget = this->target;
 	this->target.set(dst, theta);
 	this->state = ControllerState::reachingTheta;
 }
 
 void Controller::reset(float dst, float theta) {
 	this->target.set(dst, theta);
+	this->oldTarget.set(dst, theta);
 	this->state = ControllerState::reachedTarget;
 }

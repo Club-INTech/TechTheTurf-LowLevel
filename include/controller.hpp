@@ -43,6 +43,7 @@ public:
 private:
 	Odometry *odo;
 
+	Target oldTarget;
 	Target target;
 	ControllerState state;
 };

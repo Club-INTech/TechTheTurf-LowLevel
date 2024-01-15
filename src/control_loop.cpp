@@ -25,6 +25,9 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 
 	this->lSpeedPid->setClamp(-1.0f, 1.0f);
 	this->rSpeedPid->setClamp(-1.0f, 1.0f);
+	float maxVal = 1.0f/this->lSpeedPid->Kp;
+	this->dstPid->setClamp(-maxVal,maxVal);
+	this->anglePid->setClamp(-maxVal,maxVal);
 
 	this->lastTime = get_absolute_time();
 	this->lastTimePos = this->lastTime;
