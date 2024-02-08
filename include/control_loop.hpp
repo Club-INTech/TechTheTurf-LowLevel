@@ -5,7 +5,7 @@
 #include <pico/sync.h>
 
 #include <encoder.hpp>
-#include <driver.hpp>
+#include <driver_base.hpp>
 #include <pid.hpp>
 #include <odometry.hpp>
 #include <pll.hpp>
@@ -15,9 +15,10 @@
 class ControlLoop
 {
 public:
-	ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, Driver *drvRight, Odometry *odo,
+	ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *dstAlim, AccelLimiter *angleAlim, Controller *ctrl, float encoderWheelRadius);
+				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample,
+				float speedMultiplier);
 	~ControlLoop();
 
 	void start();
@@ -36,8 +37,8 @@ public:
 	
 	Encoder *encLeft;
 	Encoder *encRight;
-	Driver *drvLeft;
-	Driver *drvRight;
+	DriverBase *drvLeft;
+	DriverBase *drvRight;
 	Odometry *odo;
 
 	PID *lSpeedPid;
@@ -46,13 +47,16 @@ public:
 	PID *anglePid;
 	PLL *lPll;
 	PLL *rPll;
-	AccelLimiter *dstAlim;
-	AccelLimiter *angleAlim;
+	AccelLimiter *lSpeedTargetAlim;
+	AccelLimiter *rSpeedTargetAlim;
 
 	Controller *ctrl;
 
 	mutex_t mutex;
 
 	float encoderWheelRadius;
+	float speedMultiplier;
+	uint32_t positionLoopDownsample;
+
 	bool running;
 };

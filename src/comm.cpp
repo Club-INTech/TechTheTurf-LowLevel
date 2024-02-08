@@ -101,6 +101,7 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 
 	// Floats need to be aligned, can't just cast
 	float f1, f2, f3;
+	int32_t is1, is2;
 	PID *pid;
 
 	switch (cmd) {
@@ -155,6 +156,22 @@ void Comm::handleCmd(uint8_t *data, size_t size) {
 		case 10: // Ready for next move
 			this->sendDataSize = 1;
 			this->sendData[0] = this->cl->ctrl->isReady();
+			break;
+		// Read & Write
+		case 11: // Debug CMD
+			if (subcmd == 0) { // Read encoders
+				is1 = this->cl->encLeft->getCount();
+				is2 = this->cl->encRight->getCount();
+				this->sendDataSize = 2*sizeof(int32_t);
+				memcpy(&this->sendData[0], &is1, sizeof(int32_t));
+				memcpy(&this->sendData[4], &is2, sizeof(int32_t));
+			} else if (subcmd == 1) { // Write raw motor values
+				this->sendDataSize = 0;
+				memcpy(&f1, &data[1], sizeof(float));
+				memcpy(&f2, &data[1+4], sizeof(float));
+				this->cl->drvLeft->setPwm(f1);
+				this->cl->drvRight->setPwm(f2);
+			}
 			break;
 		default:
 			break;

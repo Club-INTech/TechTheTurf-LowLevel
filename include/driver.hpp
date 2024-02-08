@@ -1,8 +1,9 @@
 #pragma once
 
 #include <pico/stdlib.h>
+#include <driver_base.hpp>
 
-class Driver
+class Driver : public DriverBase
 {
 public:
 	// Must be on the base of a PWM slice

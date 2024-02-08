@@ -5,6 +5,7 @@
 #include <hardware/timer.h>
 #include <hardware/clocks.h>
 #include <hardware/gpio.h>
+#include <math.h>
 
 #include "quadrature_encoder.pio.h"
 
@@ -13,7 +14,7 @@
 Encoder::Encoder(uint pin_a, uint pin_b, bool reversed, uint state_machine, PIO pio, int max_step_rate) {
 	this->pio = pio;
 	this->stateMachine = state_machine;
-	assert(abs(pin_a-pin_b) == 1);
+	assert(abs(((int)pin_a)-((int)pin_b)) == 1);
 	this->reversed = reversed;
 	if (pin_a > pin_b) {
 		this->reversed ^= true;

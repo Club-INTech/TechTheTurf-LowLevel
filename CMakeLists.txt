@@ -43,7 +43,7 @@ add_executable(pami
             src/main.cpp
             src/encoder.cpp src/driver.cpp
             src/control_loop.cpp src/pid.cpp src/odometry.cpp src/controller.cpp src/pll.cpp src/accel_limiter.cpp
-            src/comm.cpp)
+            src/comm.cpp src/comm_bg.cpp src/driver_bg.cpp)
 
 include_directories(include/)
 

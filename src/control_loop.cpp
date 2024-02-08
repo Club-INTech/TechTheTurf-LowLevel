@@ -1,10 +1,12 @@
 #include <control_loop.hpp>
 #include <stdio.h>
 #include <math.h>
+#include <algorithm>
 
-ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, Driver *drvRight, Odometry *odo,
+ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *dstAlim, AccelLimiter *angleAlim, Controller *ctrl, float encoderWheelRadius) {
+				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample,
+				float speedMultiplier) {
 	this->encLeft = encLeft;
 	this->encRight = encRight;
 	this->drvLeft = drvLeft;
@@ -17,17 +19,13 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, Driver *drvLeft, D
 	this->anglePid = anglePid;
 	this->lPll = lPll;
 	this->rPll = rPll;
-	this->dstAlim = dstAlim;
-	this->angleAlim = angleAlim;
+	this->lSpeedTargetAlim = lSpeedTargetAlim;
+	this->rSpeedTargetAlim = rSpeedTargetAlim;
 	this->ctrl = ctrl;
 
 	this->encoderWheelRadius = encoderWheelRadius;
-
-	this->lSpeedPid->setClamp(-1.0f, 1.0f);
-	this->rSpeedPid->setClamp(-1.0f, 1.0f);
-	float maxVal = 1.0f/this->lSpeedPid->Kp;
-	this->dstPid->setClamp(-maxVal,maxVal);
-	this->anglePid->setClamp(-maxVal,maxVal);
+	this->positionLoopDownsample = positionLoopDownsample;
+	this->speedMultiplier = speedMultiplier;
 
 	this->lastTime = get_absolute_time();
 	this->lastTimePos = this->lastTime;
@@ -61,8 +59,8 @@ void ControlLoop::start() {
 	this->anglePid->reset();
 	this->lSpeedPid->reset();
 	this->rSpeedPid->reset();
-	this->dstAlim->reset();
-	this->angleAlim->reset();
+	this->lSpeedTargetAlim->reset();
+	this->rSpeedTargetAlim->reset();
 	this->lPll->reset();
 	this->rPll->reset();
 	this->lastCountLeft = 0;
@@ -82,7 +80,7 @@ void ControlLoop::stop() {
 }
 
 void ControlLoop::work() {
-	static uint counter = 0;
+	static uint32_t counter = 0;
 
 	if (!this->running)
 		return;
@@ -108,8 +106,8 @@ void ControlLoop::work() {
 	this->rPll->update(rCnt - this->lastCountRight, dt);
 
 	// Estimate current speed
-	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
-	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
+	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius * this->speedMultiplier;
+	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius * this->speedMultiplier;
 
 	// Update last counts
 	this->lastCountLeft = lCnt;
@@ -119,7 +117,7 @@ void ControlLoop::work() {
 	this->odo->update(lDetaDst, rDetaDst);
 
 	// Position asserv
-	if (counter == 4) {
+	if (counter >= this->positionLoopDownsample) {
 		counter = 0;
 
 		// Delta Time of pos asserv
@@ -130,26 +128,23 @@ void ControlLoop::work() {
 		//float dstSpeedTarget = this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos);
 		//float angleSpeedTarget = this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos);
 
-		float dstSpeedTarget = dstAlim->limit(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), dtPos);
-		float angleSpeedTarget = angleAlim->limit(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), dtPos);
+		float dstSpeedTarget = std::clamp(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), -3000.0f, 3000.0f);
+		float angleSpeedTarget = std::clamp(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), -100000.0f, 100000.0f);
 		
 		// Real motor speed targets
-		this->lSpeedTarget = dstSpeedTarget - angleSpeedTarget;
-		this->rSpeedTarget = dstSpeedTarget + angleSpeedTarget;
+		this->lSpeedTarget = this->lSpeedTargetAlim->limit(dstSpeedTarget - angleSpeedTarget, dtPos);
+		this->rSpeedTarget = this->rSpeedTargetAlim->limit(dstSpeedTarget + angleSpeedTarget, dtPos);
 	}
-
-	//this->rSpeedTarget = 60.0f * (((float)std::min(counter,50u))/50.0f) + -120.0f * (((float)std::min(std::max(((int)counter)-200,0),50))/50.0f);
-	//this->lSpeedTarget = 60.0f * (((float)std::min(counter,50u))/50.0f) + -120.0f * (((float)std::min(std::max(((int)counter)-200,0),50))/50.0f);
 
 	// Final control values for motors
 	float lSpeed = this->lSpeedPid->calculate(this->lSpeedTarget, lCurrentSpeed, dt);
 	float rSpeed = this->rSpeedPid->calculate(this->rSpeedTarget, rCurrentSpeed, dt);
 
-	//printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
-
 	// Write speed to motors
 	this->drvLeft->setPwm(lSpeed);
 	this->drvRight->setPwm(rSpeed);
+
+	//printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
 
 	counter++;
 	mutex_exit(&this->mutex);
