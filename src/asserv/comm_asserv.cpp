@@ -77,6 +77,14 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			memcpy(&f2, &data[1+4], sizeof(float));
 			//printf("dst %f theta %f\n", f1, f2);
 			this->cl->ctrl->setTarget(f1, f2);
+		case 13: // Write CL vars
+			if (subcmd == 0) { // SpeedProfile
+				memcpy(&f1, &data[1], sizeof(float));
+				memcpy(&f2, &data[1+4], sizeof(float));
+				this->cl->ctrl->sp->setVmax(f1);
+				this->cl->ctrl->sp->setAmax(f2);
+			}
+			break;
 		// Read operations, can't be deferred
 		case 2: // Get PID
 			pid = getPid(this->cl, subcmd);
@@ -93,6 +101,15 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 		case 10: // Ready for next move
 			this->sendDataSize = 1;
 			this->sendData[0] = this->cl->ctrl->isReady();
+			break;
+		case 12: // Read CL vars
+			if (subcmd == 0) { // SpeedProfile
+				this->sendDataSize = 2*sizeof(float);
+				f1 = this->cl->ctrl->sp->getVmax();
+				f2 = this->cl->ctrl->sp->getAmax();
+				memcpy(&this->sendData[0], &f1, sizeof(float));
+				memcpy(&this->sendData[4], &f2, sizeof(float));
+			}
 			break;
 		// Read & Write
 		case 11: // Debug CMD

@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <math.h>
-#include <algorithm>
 #include <asserv/control_loop.hpp>
 
 ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
@@ -87,12 +86,12 @@ void ControlLoop::work() {
 
 	mutex_try_enter(&this->mutex, nullptr);
 
-	ctrl->work();
-
 	// Calculate Delta time & update last time
 	absolute_time_t time = get_absolute_time();
 	float dt = ((float)absolute_time_diff_us(this->lastTime, time))/((float)1e6);
 	this->lastTime = time;
+
+	ctrl->work(dt);
 
 	// Get encoders counts
 	int32_t lCnt = this->encLeft->getCount();
@@ -125,12 +124,9 @@ void ControlLoop::work() {
 		this->lastTimePos = time;
 		
 		// Calculate virtual polar motor targets
-		//float dstSpeedTarget = this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos);
-		//float angleSpeedTarget = this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos);
+		float dstSpeedTarget = this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos);
+		float angleSpeedTarget = this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos);
 
-		float dstSpeedTarget = std::clamp(this->dstPid->calculate(this->ctrl->getDstTarget(), this->odo->dst, dtPos), -3000.0f, 3000.0f);
-		float angleSpeedTarget = std::clamp(this->anglePid->calculate(this->ctrl->getAngleTarget(), this->odo->theta, dtPos), -100000.0f, 100000.0f);
-		
 		// Real motor speed targets
 		this->lSpeedTarget = this->lSpeedTargetAlim->limit(dstSpeedTarget - angleSpeedTarget, dtPos);
 		this->rSpeedTarget = this->rSpeedTargetAlim->limit(dstSpeedTarget + angleSpeedTarget, dtPos);

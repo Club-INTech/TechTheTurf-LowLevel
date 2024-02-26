@@ -23,19 +23,47 @@ int DynamixelXL430::getShutdownStatus() {
 	return data;
 }
 
-int DynamixelXL430::setPositionTarget(float pos) {
+
+int DynamixelXL430::setPositionRaw(uint32_t pos) {
+	return this->write4(116, pos);
+}
+
+int DynamixelXL430::setPwmRaw(int16_t pwm) {
+	return this->write2(100, pwm);
+}
+
+int DynamixelXL430::setVelocityRaw(int32_t vel) {
+	return this->write4(104, vel);
+}
+
+int DynamixelXL430::setPositionRel(float pos) {
 	uint32_t posVal = pos * (this->posMax - this->posMin) + this->posMin;
-	return this->write4(116, posVal);
+	return this->setPositionRaw(posVal);
 }
 
-int DynamixelXL430::setPwmTarget(float pwm) {
-	int32_t pwmVal = pwm * this->pwmMax;
-	return this->write4(100, pwmVal);
+int DynamixelXL430::setPwmRel(float pwm) {
+	int16_t pwmVal = pwm * this->pwmMax;
+	return this->setPwmRaw(pwmVal);
 }
 
-int DynamixelXL430::setVelocityTarget(float vel) {
+int DynamixelXL430::setVelocityRel(float vel) {
 	int32_t velVal = vel * this->velMax;
-	return this->write4(104, velVal);
+	return this->setVelocityRaw(velVal);
+}
+
+int DynamixelXL430::setPosition(float posDeg) {
+	uint32_t posVal = posDeg / XL430_DEG_PER_TICK;
+	return this->setPositionRaw(posVal);
+}
+
+int DynamixelXL430::setPwm(float pwmPercent) {
+	int16_t pwmVal = pwmPercent / XL430_PERCENT_PER_TICK;
+	return this->setPwmRaw(pwmVal);
+}
+
+int DynamixelXL430::setVelocity(float velRpm) {
+	int32_t velVal = velRpm / XL430_RPM_PER_TICK;
+	return this->setVelocityRaw(velVal);
 }
 
 int DynamixelXL430::initMotor() {

@@ -54,7 +54,8 @@ add_library(ll_common_asserv INTERFACE)
 target_sources(ll_common_asserv INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/comm_asserv.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/encoder.cpp"
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/control_loop.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/pid.cpp"
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/odometry.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/controller.cpp"
-                            "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/pll.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/accel_limiter.cpp")
+                            "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/pll.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/accel_limiter.cpp"
+                            "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/speed_profile.cpp")
 
 # Linked Libs
 target_link_libraries(ll_common_asserv INTERFACE ll_common hardware_pwm hardware_pio)
@@ -92,7 +93,7 @@ target_link_libraries(ll_asserv_pamiserable INTERFACE ll_common_asserv)
 
 # Main robot
 add_library(ll_asserv_main INTERFACE)
-target_sources(ll_asserv_main INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/comm_bg.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver_bg.cpp")
+target_sources(ll_asserv_main INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/comm_bg.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver_bg.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver.cpp")
 target_compile_definitions(ll_asserv_main INTERFACE ASSERV ROBOT_MAIN)
 target_link_libraries(ll_asserv_main INTERFACE ll_common_asserv)
 
@@ -100,7 +101,9 @@ target_link_libraries(ll_asserv_main INTERFACE ll_common_asserv)
 # Main robot
 add_library(ll_action_main INTERFACE)
 target_sources(ll_action_main INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/action/comm_action.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_manager.cpp"
-                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_motor.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_xl430.cpp")
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_motor.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_xl430.cpp"
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/stepper_driver.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/endstop.cpp"
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/elevator.cpp")
 target_compile_definitions(ll_action_main INTERFACE ROBOT_MAIN)
 target_link_libraries(ll_action_main INTERFACE ll_common dynamixel_sdk)
 

@@ -40,12 +40,16 @@ int main() {
 	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, ENCODER_RIGHT_REVERSE, 1);
 
 #ifdef ROBOT_MAIN
-	CommBG *lBg = new CommBG(BG_LEFT_ID, UART_INSTANCE, UART_TX, UART_RX);
-	CommBG *rBg = new CommBG(BG_RIGHT_ID, UART_INSTANCE, UART_TX, UART_RX);
+	// Output 12V on PAMI cards left motor output (temp testing)
+	Driver *tmpDrv = new Driver(4, 5);
+	tmpDrv->setPwm(1.0f);
+
+	CommBG *lBg = new CommBG(BG_LEFT_ID, BG_UART_INSTANCE, BG_UART_TX, BG_UART_RX);
+	CommBG *rBg = new CommBG(BG_RIGHT_ID, BG_UART_INSTANCE, BG_UART_TX, BG_UART_RX);
 
 	DriverBG *lDrv = new DriverBG(lBg, DRIVER_LEFT_REVERSE);
 	DriverBG *rDrv = new DriverBG(rBg, DRIVER_RIGHT_REVERSE);
-	// Temp hack to bypass PID
+	// Temp hack to bypass speed PID
 	float speedMul = 0.0f;
 #else
 	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, DRIVER_LEFT_REVERSE);
@@ -80,6 +84,9 @@ int main() {
 	//dstPid->setClamp(-maxVal,maxVal);
 	//anglePid->setClamp(-maxVal,maxVal);
 
+	dstPid->setClamp(-3000.0f, 3000.0f);
+	anglePid->setClamp(-100000.0f, 100000.0f);
+
 	// Setup PLLs
 	PLL *lPll = new PLL(9.0f);
 	PLL *rPll = new PLL(9.0f);
@@ -88,8 +95,11 @@ int main() {
 	AccelLimiter *lSpeedAlim = new AccelLimiter(MAX_ACCEL);
 	AccelLimiter *rSpeedAlim = new AccelLimiter(MAX_ACCEL);
 
+	// Setup trapezoidal speed profile
+	SpeedProfile *speedProfile = new SpeedProfile(MAX_LIN_VELOCITY, MAX_LIN_ACCEL);
+
 	// Setup the controller
-	Controller *ctrl = new Controller(odo);
+	Controller *ctrl = new Controller(odo, speedProfile);
 
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lSpeedAlim, rSpeedAlim,
