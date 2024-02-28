@@ -19,6 +19,14 @@ bool Elevator::isHomed() {
 	return this->homed;
 }
 
+bool Elevator::isEnabled() {
+	return this->state;
+}
+
+float Elevator::getPosition() {
+	return this->pos;
+}
+
 void Elevator::setEnable(bool en) {
 	this->state = en;
 	this->drv->setEnable(en);

@@ -5,6 +5,10 @@
 DynamixelXL430::DynamixelXL430(uint8_t id) : DynamixelMotor(id, 2.0) {
 }
 
+int DynamixelXL430::setLED(bool enabled) {
+	return this->write1(65, enabled ? 1 : 0);
+}
+
 int DynamixelXL430::setTorque(bool torque) {
 	return this->write1(64, torque ? 1 : 0);
 }
@@ -23,6 +27,51 @@ int DynamixelXL430::getShutdownStatus() {
 	return data;
 }
 
+bool DynamixelXL430::isMoving() {
+	uint8_t data;
+	int res = this->read1(122, &data);
+
+	if (res != 0)
+		return false;
+
+	return data == 1;
+}
+
+float DynamixelXL430::getPosition() {
+	uint32_t data;
+	int res = this->read4(132, &data);
+
+	if (res != 0)
+		return 0;
+
+	float pos = data * XL430_DEG_PER_TICK;
+
+	return pos;
+}
+
+float DynamixelXL430::getVelocity() {
+	uint32_t data;
+	int res = this->read4(128, &data);
+
+	if (res != 0)
+		return 0;
+
+	float vel = data * XL430_RPM_PER_TICK;
+
+	return vel;
+}
+
+float DynamixelXL430::getLoad() {
+	uint32_t data;
+	int res = this->read4(126, &data);
+
+	if (res != 0)
+		return 0;
+
+	float load = data / 1000;
+
+	return load;
+}
 
 int DynamixelXL430::setPositionRaw(uint32_t pos) {
 	return this->write4(116, pos);
@@ -56,8 +105,8 @@ int DynamixelXL430::setPosition(float posDeg) {
 	return this->setPositionRaw(posVal);
 }
 
-int DynamixelXL430::setPwm(float pwmPercent) {
-	int16_t pwmVal = pwmPercent / XL430_PERCENT_PER_TICK;
+int DynamixelXL430::setPwm(float pwm) {
+	int16_t pwmVal = pwm / XL430_PERCENT_PER_TICK;
 	return this->setPwmRaw(pwmVal);
 }
 
@@ -70,7 +119,7 @@ int DynamixelXL430::initMotor() {
 	if (this->reboot() != 0)
 		return -1;
 
-	sleep_ms(1000);
+	busy_wait_us(XL430_RESET_DELAY_US);
 
 	uint16_t modelNb = 0;
 	if (this->ping(&modelNb) != 0)

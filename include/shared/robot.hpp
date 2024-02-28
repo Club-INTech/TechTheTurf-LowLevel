@@ -202,7 +202,7 @@
 
 	#define ELEVATOR_STEP 3
 	#define ELEVATOR_DIR 2
-	#define ELEVATOR_SLP 4
+	#define ELEVATOR_EN 4
 
 	#define ELEVATOR_ENDSTOP 5
 
@@ -216,6 +216,10 @@
 	#define ELEVATOR_MAX_DST 200.0
 	#define ELEVATOR_MM_PER_TURN 40.0
 	#define ELEVATOR_REVERSE true
+
+	// Solar pannel arm angles
+	#define ARM_DEPLOYED_ANGLE 90.0
+	#define ARM_FOLDED_ANGLE 165.0
 
 #endif
 

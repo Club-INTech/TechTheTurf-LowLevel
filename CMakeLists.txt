@@ -103,7 +103,8 @@ add_library(ll_action_main INTERFACE)
 target_sources(ll_action_main INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/action/comm_action.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_manager.cpp"
                                         "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_motor.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_xl430.cpp"
                                         "${CMAKE_CURRENT_SOURCE_DIR}/src/action/stepper_driver.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/endstop.cpp"
-                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/elevator.cpp")
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/elevator.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/pump.cpp"
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/src/action/arm.cpp")
 target_compile_definitions(ll_action_main INTERFACE ROBOT_MAIN)
 target_link_libraries(ll_action_main INTERFACE ll_common dynamixel_sdk)
 

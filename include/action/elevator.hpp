@@ -10,9 +10,12 @@ public:
 	~Elevator();
 
 	void setEnable(bool en);
+	bool isEnabled();
 
 	void home();
 	bool isHomed();
+
+	float getPosition();
 
 	// in mm, force to move when not homed
 	void move(float dst, bool force=false);

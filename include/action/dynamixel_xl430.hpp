@@ -2,6 +2,8 @@
 
 #include <action/dynamixel_motor.hpp>
 
+#define XL430_RESET_DELAY_US 600000
+
 #define XL430_MODEL_NB 1060
 
 #define XL430_MAX_VEL 1023
@@ -11,7 +13,7 @@
 #define XL430_DEG_PER_TICK (360.0/XL430_MAX_POS)
 
 #define XL430_MAX_PWM 885
-#define XL430_PERCENT_PER_TICK (100.0/XL430_MAX_PWM)
+#define XL430_PERCENT_PER_TICK (1.0/XL430_MAX_PWM)
 
 enum XL430OperatingMode { 
 	velocity = 1,
@@ -28,6 +30,8 @@ public:
 	int setTorque(bool torque);
 	int setOperatingMode(XL430OperatingMode mode);
 
+	// Set led
+	int setLED(bool enabled);
 
 	// Set targets to raw respective ticks
 	// 0 - XL430_MAX_POS
@@ -40,8 +44,8 @@ public:
 	// Set targets to values with units
 	// 0 deg - 360 deg
 	int setPosition(float posDeg);
-	// 0 % - 100 %
-	int setPwm(float pwmPercent);
+	// -1 - 1
+	int setPwm(float pwm);
 	// 0 rpm - 234 rpm
 	int setVelocity(float velRpm);
 
@@ -52,6 +56,16 @@ public:
 	int setPwmRel(float pwm);
 	// [-1, 1]
 	int setVelocityRel(float vel);
+
+	// Asks motor if it is moving
+	bool isMoving();
+
+	// In degrees
+	float getPosition();
+	// In RPM
+	float getVelocity();
+	// -1 - 1
+	float getLoad();
 
 	int getShutdownStatus();
 

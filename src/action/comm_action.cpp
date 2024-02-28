@@ -1,10 +1,55 @@
 #include <action/comm_action.hpp>
+#include <algorithm>
 
-CommAction::CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c) : Comm(sdaPin, sclPin, addr, i2c) {
-	this->start = false;
+CommAction::CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Elevator *elev, Arm *arm) : Comm(sdaPin, sclPin, addr, i2c) {
+	this->cmd = -1;
+	this->working = false;
+	this->elev = elev;
+	this->arm = arm;
 }
 
 CommAction::~CommAction() {
+}
+
+void CommAction::startWork() {
+	this->working = true;
+}
+
+void CommAction::finishWork() {
+	this->working = false;
+}
+
+int CommAction::getCommand() {
+	int cmd = this->cmd;
+
+	if (cmd != -1)
+		this->cmd = -1;
+
+	return cmd;
+}
+
+uint8_t CommAction::getArgumentU8(uint8_t offset) {
+	uint8_t data;
+	memcpy(&data, &this->args[offset], sizeof(uint8_t));
+	return data;
+}
+
+uint16_t CommAction::getArgumentU16(uint8_t offset) {
+	uint16_t data;
+	memcpy(&data, &this->args[offset], sizeof(uint16_t));
+	return data;
+}
+
+uint32_t CommAction::getArgumentU32(uint8_t offset) {
+	uint32_t data;
+	memcpy(&data, &this->args[offset], sizeof(uint32_t));
+	return data;
+}
+
+float CommAction::getArgumentFloat(uint8_t offset) {
+	float data;
+	memcpy(&data, &this->args[offset], sizeof(float));
+	return data;
 }
 
 void CommAction::handleCmd(uint8_t *data, size_t size) {
@@ -14,41 +59,36 @@ void CommAction::handleCmd(uint8_t *data, size_t size) {
 	uint8_t subcmd = (fbyte>>4)&0xF;
 
 	// Floats need to be aligned, can't just cast
-	float f1, f2, f3;
-	int32_t is1, is2;
+	float f1;
 	TelemetryBase* telem;
 
-	switch (cmd) {
-		case 1:
-			this->start = true;
-			break;
-		default:
-			break; 
+	// Also send CMD to main core, fine to do always because there isn't any overlap in the commands
+	if (!this->working) { // Ignore cmds when working for main core
+		this->cmd = fbyte;
+		memcpy(&this->args, &data[1], size-1);
 	}
 
-	/*switch (cmd) {
-		// Write operations, could be deferred from IRQ
-		case 0: // Turn ON/OFF
-			if (data[1])
-				this->cl->start();
-			else
-				this->cl->stop();
+	switch (cmd) { // Only handle reads from master here, defer everything to main core
+		// Elevator control
+		case 1:
+			if (subcmd == 3) { // Is homed ?
+				this->sendDataSize = 1;
+				this->sendData[0] = this->elev->isHomed();
+			} else if (subcmd == 4) { // Gets position
+				this->sendDataSize = sizeof(float);
+				f1 = this->elev->getPosition();
+				memcpy(&this->sendData[0], &f1, sizeof(float)); 
+			}
 			break;
-		case 1: // Move
-			memcpy(&f1, &data[1], sizeof(float));
-			memcpy(&f2, &data[1+4], sizeof(float));
-			//printf("dst %f theta %f\n", f1, f2);
-			this->cl->ctrl->movePolar(f1, f2);
+		// Arm control
+		case 2:
+			if (subcmd == 3) { // Is it deployed ?
+				this->sendDataSize = 1;
+				this->sendData[0] = this->elev->isHomed();
+			}
 			break;
-		case 5: // Change PID
-			pid = getPid(this->cl, subcmd);
-			memcpy(&f1, &data[1], sizeof(float));
-			memcpy(&f2, &data[1+4], sizeof(float));
-			memcpy(&f3, &data[1+4*2], sizeof(float));
-			//printf("pid %i kp %f ki %f kd %f\n", subcmd, f1, f2, f3);
-			pid->setPID(f1, f2, f3);
-			break;
-		case 6: // Telem on/off
+		// Telem on/off
+		case 6: 
 			telem = getTelem(subcmd);
 			if (!telem)
 				break;
@@ -58,45 +98,12 @@ void CommAction::handleCmd(uint8_t *data, size_t size) {
 			else
 				telem->stop();
 			break;
-		case 9: // Set target
-			memcpy(&f1, &data[1], sizeof(float));
-			memcpy(&f2, &data[1+4], sizeof(float));
-			//printf("dst %f theta %f\n", f1, f2);
-			this->cl->ctrl->setTarget(f1, f2);
-		// Read operations, can't be deferred
-		case 2: // Get PID
-			pid = getPid(this->cl, subcmd);
-			this->sendDataSize = 3*sizeof(float);
-			memcpy(&this->sendData[0], &pid->Kp, sizeof(float));
-			memcpy(&this->sendData[4], &pid->Ki, sizeof(float));
-			memcpy(&this->sendData[4*2], &pid->Kd, sizeof(float));
-			break;
-		case 3: // Get theta, rho
-			this->sendDataSize = 2*sizeof(float);
-			memcpy(&this->sendData[0], &this->cl->odo->dst, sizeof(float));
-			memcpy(&this->sendData[4], &this->cl->odo->theta, sizeof(float));
-			break;
-		case 10: // Ready for next move
+		// Ready for next order
+		case 10: 
 			this->sendDataSize = 1;
-			this->sendData[0] = this->cl->ctrl->isReady();
-			break;
-		// Read & Write
-		case 11: // Debug CMD
-			if (subcmd == 0) { // Read encoders
-				is1 = this->cl->encLeft->getCount();
-				is2 = this->cl->encRight->getCount();
-				this->sendDataSize = 2*sizeof(int32_t);
-				memcpy(&this->sendData[0], &is1, sizeof(int32_t));
-				memcpy(&this->sendData[4], &is2, sizeof(int32_t));
-			} else if (subcmd == 1) { // Write raw motor values
-				this->sendDataSize = 0;
-				memcpy(&f1, &data[1], sizeof(float));
-				memcpy(&f2, &data[1+4], sizeof(float));
-				this->cl->drvLeft->setPwm(f1);
-				this->cl->drvRight->setPwm(f2);
-			}
+			this->sendData[0] = !this->working;
 			break;
 		default:
-			break;
-	}*/
+			break; 
+	}
 }

@@ -10,7 +10,7 @@
 class StepperDriver
 {
 public:
-	StepperDriver(uint8_t step, uint8_t dir, uint8_t slp, uint32_t stepsPerRevs, bool reverse = false);
+	StepperDriver(uint8_t step, uint8_t dir, uint8_t en, uint32_t stepsPerRevs, bool reverse = false);
 	~StepperDriver();
 
 	void setEnable(bool en);
@@ -27,6 +27,6 @@ private:
 
 	uint32_t stepsPerRevs;
 
-	uint8_t step, dir, slp;
+	uint8_t step, dir, en;
 	bool reverse;
 };

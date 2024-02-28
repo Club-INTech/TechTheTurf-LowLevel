@@ -5,20 +5,20 @@
 
 // TODO: convert to PIO
 
-StepperDriver::StepperDriver(uint8_t step, uint8_t dir, uint8_t slp, uint32_t stepsPerRevs, bool reverse) {
+StepperDriver::StepperDriver(uint8_t step, uint8_t dir, uint8_t en, uint32_t stepsPerRevs, bool reverse) {
 	this->step = step;
 	this->dir = dir;
-	this->slp = slp;
+	this->en = en;
 	this->stepsPerRevs = stepsPerRevs;
 	this->reverse = reverse;
 
 	gpio_init(step);
 	gpio_init(dir);
-	gpio_init(slp);
+	gpio_init(en);
 
 	gpio_set_dir(step, true);
 	gpio_set_dir(dir, true);
-	gpio_set_dir(slp, true);
+	gpio_set_dir(en, true);
 
 	gpio_put(step, false);
 	gpio_put(dir, false);
@@ -29,12 +29,12 @@ StepperDriver::StepperDriver(uint8_t step, uint8_t dir, uint8_t slp, uint32_t st
 StepperDriver::~StepperDriver() {
 	gpio_deinit(this->step);
 	gpio_deinit(this->dir);
-	gpio_deinit(this->slp);
+	gpio_deinit(this->en);
 }
 
 void StepperDriver::setEnable(bool en) {
 	this->state = en;
-	gpio_put(this->slp, this->state);
+	gpio_put(this->en, !en);
 }
 
 int32_t StepperDriver::toSteps(float turns) {
@@ -62,7 +62,6 @@ void StepperDriver::stepCount(int steps) {
 	busy_wait_us(DIR_SETUP);
 
 	for (int i=0;i<steps;i++) {
-		printf("%i/%i\n", i, steps);
 		busy_wait_us(STEP_SPACE);
 		gpio_put(this->step, true);
 		busy_wait_us(STEP_TIME);
