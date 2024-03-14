@@ -39,6 +39,7 @@ public:
 	bool isReady();
 	void movePolar(float dst, float theta);
 	void setTarget(float dst, float theta);
+	void setRawTarget(float dst, float theta);
 	void reset(float dst=0, float theta=0);
 
 	Odometry *odo;

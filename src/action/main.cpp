@@ -51,7 +51,8 @@ int main() {
 	DynamixelXL430 *armDeploy = new DynamixelXL430(ARM_DEPLOY_DYN_ID);
 	DynamixelXL430 *armTurn = new DynamixelXL430(ARM_TURN_DYN_ID);
 
-	Pump *pump = new Pump(PUMP_PIN);
+	Pump *pump = new Pump(PUMP0_PIN);
+	Pump *pump_sol = new Pump(PUMP0_SOLENOID_PIN);
 	
 	armDeploy->bind(dynMan);
 	armTurn->bind(dynMan);
@@ -118,40 +119,8 @@ int main() {
 			case 3:
 				if (subcmd == 0) // Pump 1
 					pump->setEnable(hlComm->getArgumentU8(0) == 1);
-				break;
-			// Demo CMD
-			case 15: 
-				pump->enable();
-				sleep_ms(1000);
-				pump->disable();
-
-				sleep_ms(1000);
-
-				elev->setEnable(true);
-				elev->home();
-				sleep_ms(500);
-				elev->moveTo(125.0f);
-				sleep_ms(500);
-				elev->moveTo(65.0f);
-				sleep_ms(500);
-				elev->moveTo(0.0f);
-				sleep_ms(500);
-				elev->home();
-				elev->setEnable(false);
-
-				sleep_ms(1000);
-
-				arm->setEnable(true);
-				sleep_ms(200);
-				arm->fold();
-				sleep_ms(1000);
-				arm->deploy();
-				sleep_ms(1000);
-				arm->turn(360.0f);
-				sleep_ms(500);
-				arm->fold();
-
-				arm->setEnable(false);
+				else if (subcmd == 1) // Pump 2
+					pump_sol->setEnable(hlComm->getArgumentU8(0) == 1);
 				break;
 			default:
 				break;

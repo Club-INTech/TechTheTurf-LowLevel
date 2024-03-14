@@ -103,7 +103,7 @@ int main() {
 
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lSpeedAlim, rSpeedAlim,
-									ctrl, WHEEL_RADIUS, POSITION_DOWNSAMPLING, speedMul);
+									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING, speedMul);
 
 	// Init motor control
 	//printf("Begin\n");

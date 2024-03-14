@@ -37,7 +37,7 @@ void Arm::deployMoveWait(float angle) {
 		return;
 	this->xlDeploy->setPosition(angle);
 	// Doesn't change moving straight away, it needs some time
-	busy_wait_us(50000);
+	busy_wait_us(DYNAMIXEL_MOTION_WAIT_US);
 	while (this->xlDeploy->isMoving())
 		busy_wait_us(5000);
 }
@@ -69,7 +69,15 @@ void Arm::turn(float angle) {
 		return;
 	this->xlHead->setPosition(this->xlHead->getPosition()+angle);
 	// Doesn't change moving straight away, it needs some time
-	busy_wait_us(50000);
+	busy_wait_us(DYNAMIXEL_MOTION_WAIT_US);
 	while (this->xlHead->isMoving())
 		busy_wait_us(5000);
+}
+
+float Arm::getArmAngle() {
+	return this->xlDeploy->getPosition();
+}
+
+float Arm::getTurnAngle() {
+	return this->xlHead->getPosition();
 }

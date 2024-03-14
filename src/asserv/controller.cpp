@@ -74,6 +74,10 @@ void Controller::setTarget(float dst, float theta) {
 	this->state = ControllerState::reachingTheta;
 }
 
+void Controller::setRawTarget(float dst, float theta) {
+	this->target.set(dst, theta);
+}
+
 void Controller::reset(float dst, float theta) {
 	this->target.set(dst, theta);
 	this->oldTarget.set(dst, theta);

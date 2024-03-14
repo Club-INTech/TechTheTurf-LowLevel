@@ -2,6 +2,8 @@
 
 #include <action/dynamixel_xl430.hpp>
 
+#define DYNAMIXEL_MOTION_WAIT_US 100000
+
 class Arm
 {
 public:
@@ -16,6 +18,9 @@ public:
 	bool isEnabled();
 
 	void turn(float angle);
+
+	float getArmAngle();
+	float getTurnAngle();
 
 private:
 

@@ -94,9 +94,15 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			memcpy(&this->sendData[4*2], &pid->Kd, sizeof(float));
 			break;
 		case 3: // Get theta, rho
-			this->sendDataSize = 2*sizeof(float);
-			memcpy(&this->sendData[0], &this->cl->odo->dst, sizeof(float));
-			memcpy(&this->sendData[4], &this->cl->odo->theta, sizeof(float));
+			if (subcmd == 0) {
+				this->sendDataSize = 2*sizeof(float);
+				memcpy(&this->sendData[0], &this->cl->odo->dst, sizeof(float));
+				memcpy(&this->sendData[4], &this->cl->odo->theta, sizeof(float));
+			} else if (subcmd == 1) {
+				this->sendDataSize = 2*sizeof(float);
+				memcpy(&this->sendData[0], &this->cl->odo->x, sizeof(float));
+				memcpy(&this->sendData[4], &this->cl->odo->y, sizeof(float));
+			}
 			break;
 		case 10: // Ready for next move
 			this->sendDataSize = 1;
@@ -120,11 +126,14 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				memcpy(&this->sendData[0], &is1, sizeof(int32_t));
 				memcpy(&this->sendData[4], &is2, sizeof(int32_t));
 			} else if (subcmd == 1) { // Write raw motor values
-				this->sendDataSize = 0;
 				memcpy(&f1, &data[1], sizeof(float));
 				memcpy(&f2, &data[1+4], sizeof(float));
 				this->cl->drvLeft->setPwm(f1);
 				this->cl->drvRight->setPwm(f2);
+			} else if (subcmd == 2) { // Write raw asserv targets
+				memcpy(&f1, &data[1], sizeof(float));
+				memcpy(&f2, &data[1+4], sizeof(float));
+				this->cl->ctrl->setRawTarget(f1, f2);
 			}
 			break;
 		default:

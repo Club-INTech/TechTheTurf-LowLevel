@@ -34,8 +34,9 @@ public:
 	int setLED(bool enabled);
 
 	// Set targets to raw respective ticks
-	// 0 - XL430_MAX_POS
-	int setPositionRaw(uint32_t pos);
+	// 0 - XL430_MAX_POS For normal position
+	// -256 revs - 256 revs For extended position
+	int setPositionRaw(int32_t pos);
 	// -XL430_MAX_PWM - XL430_MAX_PWM
 	int setPwmRaw(int16_t pwm);
 	// -XL430_MAX_VEL - XL430_MAX_VEL

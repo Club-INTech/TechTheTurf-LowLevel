@@ -38,8 +38,8 @@ bool DynamixelXL430::isMoving() {
 }
 
 float DynamixelXL430::getPosition() {
-	uint32_t data;
-	int res = this->read4(132, &data);
+	int32_t data;
+	int res = this->read4(132, (uint32_t*)&data);
 
 	if (res != 0)
 		return 0;
@@ -50,8 +50,8 @@ float DynamixelXL430::getPosition() {
 }
 
 float DynamixelXL430::getVelocity() {
-	uint32_t data;
-	int res = this->read4(128, &data);
+	int32_t data;
+	int res = this->read4(128, (uint32_t*)&data);
 
 	if (res != 0)
 		return 0;
@@ -63,7 +63,7 @@ float DynamixelXL430::getVelocity() {
 
 float DynamixelXL430::getLoad() {
 	uint32_t data;
-	int res = this->read4(126, &data);
+	int res = this->read4(126, (uint32_t*)&data);
 
 	if (res != 0)
 		return 0;
@@ -73,7 +73,7 @@ float DynamixelXL430::getLoad() {
 	return load;
 }
 
-int DynamixelXL430::setPositionRaw(uint32_t pos) {
+int DynamixelXL430::setPositionRaw(int32_t pos) {
 	return this->write4(116, pos);
 }
 
@@ -86,7 +86,7 @@ int DynamixelXL430::setVelocityRaw(int32_t vel) {
 }
 
 int DynamixelXL430::setPositionRel(float pos) {
-	uint32_t posVal = pos * (this->posMax - this->posMin) + this->posMin;
+	int32_t posVal = pos * (this->posMax - this->posMin) + this->posMin;
 	return this->setPositionRaw(posVal);
 }
 
@@ -101,7 +101,7 @@ int DynamixelXL430::setVelocityRel(float vel) {
 }
 
 int DynamixelXL430::setPosition(float posDeg) {
-	uint32_t posVal = posDeg / XL430_DEG_PER_TICK;
+	int32_t posVal = posDeg / XL430_DEG_PER_TICK;
 	return this->setPositionRaw(posVal);
 }
 

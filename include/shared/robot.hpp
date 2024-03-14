@@ -9,13 +9,13 @@
 	// Control Loop Config
 	#define POSITION_DOWNSAMPLING 4
 	// rads/s
-	#define MAX_VELOCITY 10.0f
+	#define MAX_VELOCITY 1000.0f
 	// rads/s^2
-	#define MAX_ACCEL 1000.0f
+	#define MAX_ACCEL 4000.0f
 	// mm/s
-	#define MAX_LIN_VELOCITY 40.0f
+	#define MAX_LIN_VELOCITY 600.0f
 	// mm/s^2
-	#define MAX_LIN_ACCEL 20.0f
+	#define MAX_LIN_ACCEL 1000.0f
 	// PIDs
 	#ifdef PAMINABLE
 		// Speed PID
@@ -89,7 +89,7 @@
 	// Mech constants
 	#ifdef PAMINABLE
 		// Paminable
-		#define WHEEL_RADIUS (34.0f/2.0f)
+		#define ENCODER_WHEEL_RADIUS (34.0f/2.0f)
 		#define ENCODER_DIST 89.0f
 
 		#define ENCODER_LEFT_REVERSE false
@@ -99,7 +99,7 @@
 		#define DRIVER_RIGHT_REVERSE false
 	#else
 		// Pamisérable
-		#define WHEEL_RADIUS (34.0f/2.0f)
+		#define ENCODER_WHEEL_RADIUS (34.0f/2.0f)
 		#define ENCODER_DIST 89.0f
 
 		#define ENCODER_LEFT_REVERSE false
@@ -165,13 +165,13 @@
 
 	// Mech Constants
 
-	#define WHEEL_RADIUS (53.5f/2.0f)
+	#define ENCODER_WHEEL_RADIUS (53.5f/2.0f)
 	#define ENCODER_DIST 114.0f
 
 	#define ENCODER_LEFT_REVERSE false
 	#define ENCODER_RIGHT_REVERSE true
 
-	#define DRIVER_LEFT_REVERSE true
+	#define DRIVER_LEFT_REVERSE false
 	#define DRIVER_RIGHT_REVERSE true
 #endif
 
@@ -187,8 +187,10 @@
 	#define DYN_BAUDRATE 57600
 	#define DYN_PROTO_VER 2.0
 
-	#define ARM_DEPLOY_DYN_ID 1
-	#define ARM_TURN_DYN_ID 14
+	//#define ARM_DEPLOY_DYN_ID 1
+	//#define ARM_TURN_DYN_ID 14
+	#define ARM_DEPLOY_DYN_ID 16
+	#define ARM_TURN_DYN_ID 15
 
 	// Stepper for elevator
 	#define ELEVATOR_STEPS_PER_ROT 200
@@ -206,7 +208,8 @@
 
 	#define ELEVATOR_ENDSTOP 5
 
-	#define PUMP_PIN 6
+	#define PUMP0_PIN 6
+	#define PUMP0_SOLENOID_PIN 7
 
 	// Mech constants
 
@@ -218,8 +221,10 @@
 	#define ELEVATOR_REVERSE true
 
 	// Solar pannel arm angles
-	#define ARM_DEPLOYED_ANGLE 90.0
-	#define ARM_FOLDED_ANGLE 165.0
+	//#define ARM_DEPLOYED_ANGLE 270.0
+	//#define ARM_FOLDED_ANGLE 354.0
+	#define ARM_DEPLOYED_ANGLE 184.0
+	#define ARM_FOLDED_ANGLE 146.0
 
 #endif
 

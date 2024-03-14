@@ -23,6 +23,8 @@ public:
 
 private:
 
+	void queueCmd(uint8_t fbyte, uint8_t *data, size_t size);
+
 	Elevator *elev;
 	Arm *arm;
 
@@ -30,4 +32,5 @@ private:
 	uint8_t args[4*2]; // Max 2 floats
 
 	bool working;
+	bool queued;
 };
