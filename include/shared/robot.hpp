@@ -224,7 +224,7 @@
 	//#define ARM_DEPLOYED_ANGLE 270.0
 	//#define ARM_FOLDED_ANGLE 354.0
 	#define ARM_DEPLOYED_ANGLE 184.0
-	#define ARM_FOLDED_ANGLE 146.0
+	#define ARM_FOLDED_ANGLE 105.0
 
 #endif
 

@@ -42,11 +42,15 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 
 	switch (cmd) {
 		// Write operations, could be deferred from IRQ
-		case 0: // Turn ON/OFF
-			if (data[1])
-				this->cl->start();
-			else
-				this->cl->stop();
+		case 0:
+			if (subcmd == 0) { // Turn ON/OFF
+				if (data[1])
+					this->cl->start();
+				else
+					this->cl->stop();
+			} else if (subcmd == 1) { // Emergency stop
+				this->cl->estop();
+			}
 			break;
 		case 1: // Move
 			memcpy(&f1, &data[1], sizeof(float));

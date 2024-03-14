@@ -78,13 +78,19 @@ void ControlLoop::stop() {
 	mutex_exit(&this->mutex);
 }
 
+void ControlLoop::estop() {
+	if (!this->running)
+		return;
+	mutex_try_enter(&this->mutex, nullptr);
+	this->ctrl->reset(this->odo->dst, this->odo->theta);
+	mutex_exit(&this->mutex);
+}
+
 void ControlLoop::work() {
 	static uint32_t counter = 0;
 
 	if (!this->running)
 		return;
-
-	mutex_try_enter(&this->mutex, nullptr);
 
 	// Calculate Delta time & update last time
 	absolute_time_t time = get_absolute_time();
@@ -136,12 +142,17 @@ void ControlLoop::work() {
 	float lSpeed = this->lSpeedPid->calculate(this->lSpeedTarget, lCurrentSpeed, dt);
 	float rSpeed = this->rSpeedPid->calculate(this->rSpeedTarget, rCurrentSpeed, dt);
 
+	// Mutex only protects important section: motor control
+	// The rest is reset at start anyways
+	mutex_try_enter(&this->mutex, nullptr);
+
 	// Write speed to motors
 	this->drvLeft->setPwm(lSpeed);
 	this->drvRight->setPwm(rSpeed);
 
+	mutex_exit(&this->mutex);
+
 	//printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
 
 	counter++;
-	mutex_exit(&this->mutex);
 }

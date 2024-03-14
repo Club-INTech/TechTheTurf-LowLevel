@@ -24,6 +24,9 @@ public:
 	void start();
 	void stop();
 
+	// Emergency Stop
+	void estop();
+
 	void work();
 
 	int32_t lastCountLeft;
