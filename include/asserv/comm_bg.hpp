@@ -4,9 +4,6 @@
 #include <hardware/uart.h>
 #include <stdint.h>
 
-#define SERIAL_HEADER 0x4142
-#define COMM_BAUD 1000000
-
 enum MotionControlType {
 	torque            = 0x00,     //!< Torque control
 	velocity          = 0x01,     //!< Velocity motion control

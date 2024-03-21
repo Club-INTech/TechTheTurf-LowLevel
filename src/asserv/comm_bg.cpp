@@ -1,5 +1,8 @@
 #include <asserv/comm_bg.hpp>
 
+#define SERIAL_HEADER 0x4142
+#define COMM_BAUD 1000000
+
 CommBG::CommBG(uint8_t uid, uart_inst_t *uart, uint8_t tx, uint8_t rx) {
 	this->uid = uid;
 	this->uart = uart;

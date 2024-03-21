@@ -10,7 +10,9 @@
 #include <asserv/pll.hpp>
 #include <asserv/accel_limiter.hpp>
 #include <asserv/comm_bg.hpp>
+#include <asserv/comm_odrive.hpp>
 #include <asserv/driver_bg.hpp>
+#include <asserv/driver_odrive.hpp>
 
 #include <shared/robot.hpp>
 
@@ -40,15 +42,18 @@ int main() {
 	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, ENCODER_RIGHT_REVERSE, 1);
 
 #ifdef ROBOT_MAIN
-	// Output 12V on PAMI cards left motor output (temp testing)
-	Driver *tmpDrv = new Driver(4, 5);
-	tmpDrv->setPwm(1.0f);
+#ifdef MAIN_USE_ODRIVE
+	CommODrive *odrive = new CommODrive(UART_INSTANCE, UART_TX, UART_RX);
 
-	CommBG *lBg = new CommBG(BG_LEFT_ID, BG_UART_INSTANCE, BG_UART_TX, BG_UART_RX);
-	CommBG *rBg = new CommBG(BG_RIGHT_ID, BG_UART_INSTANCE, BG_UART_TX, BG_UART_RX);
+	DriverODrive *lDrv = new DriverODrive(odrive, ODRIVE_LEFT_AXIS, DRIVER_LEFT_REVERSE);
+	DriverODrive *rDrv = new DriverODrive(odrive, ODRIVE_RIGHT_AXIS, DRIVER_RIGHT_REVERSE);
+#else
+	CommBG *lBg = new CommBG(BG_LEFT_ID, UART_INSTANCE, UART_TX, UART_RX);
+	CommBG *rBg = new CommBG(BG_RIGHT_ID, UART_INSTANCE, UART_TX, UART_RX);
 
 	DriverBG *lDrv = new DriverBG(lBg, DRIVER_LEFT_REVERSE);
 	DriverBG *rDrv = new DriverBG(rBg, DRIVER_RIGHT_REVERSE);
+#endif
 	// Temp hack to bypass speed PID
 	float speedMul = 0.0f;
 #else

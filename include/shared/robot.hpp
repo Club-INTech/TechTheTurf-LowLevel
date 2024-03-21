@@ -102,8 +102,8 @@
 		#define ENCODER_WHEEL_RADIUS (34.0f/2.0f)
 		#define ENCODER_DIST 89.0f
 
-		#define ENCODER_LEFT_REVERSE false
-		#define ENCODER_RIGHT_REVERSE true
+		#define ENCODER_LEFT_REVERSE true
+		#define ENCODER_RIGHT_REVERSE false
 
 		#define DRIVER_LEFT_REVERSE false
 		#define DRIVER_RIGHT_REVERSE true
@@ -142,21 +142,24 @@
 	#define I2C_INSTANCE i2c0
 	#define I2C_ADDR 0x69
 
-	// UART BG
-	#define BG_UART_INSTANCE uart0
+	// UART BG/ODrive
+	#define UART_INSTANCE uart0
 
 	// BG Motors
 	#define BG_LEFT_ID 0
 	#define BG_RIGHT_ID 1
 
+	// ODrive Motors
+	#define ODRIVE_LEFT_AXIS 0
+	#define ODRIVE_RIGHT_AXIS 1
+
 	// Pins
 	#define I2C_SDA 0
 	#define I2C_SCL 1
 
-	// BG UART Pins
-	#define BG_UART_TX 12
-	#define BG_UART_RX 13
-
+	// BG/ODrive UART Pins
+	#define UART_TX 16
+	#define UART_RX 17
 
 	#define LEFT_INCREMENTAL_A_PIN 8
 	#define LEFT_INCREMENTAL_B_PIN 9
@@ -223,8 +226,8 @@
 	// Solar pannel arm angles
 	//#define ARM_DEPLOYED_ANGLE 270.0
 	//#define ARM_FOLDED_ANGLE 354.0
-	#define ARM_DEPLOYED_ANGLE 184.0
-	#define ARM_FOLDED_ANGLE 105.0
+	#define ARM_DEPLOYED_ANGLE 82.2
+	#define ARM_FOLDED_ANGLE 186.2
 
 #endif
 
