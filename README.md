@@ -12,7 +12,7 @@ This is what is actually running on all the picos.
 - `include/` Headers arranged in the same fashion as the `src/` folder
 - `pio/` Code for the PIOs in the Picos.
 
-## What does it compile into
+## What does it compile into ?
 
 - In the `bg/` PlatformIO project, there are 2 enviroments:
 	- `left` for the left BG.
