@@ -30,6 +30,10 @@ public:
 	void setLpf(float lpf);
 	// Output Ramp in (pid units)/s (derivative)
 	void setRamp(float ramp);
+	// Enables or disables the passthrough of the desired value, doesn't make much sense for a PID
+	// If enabled returns directly the clamped desired in calculate
+	void setPassthrough(bool enabled);
+
 	void reset();
 
 	// Calc using straight values
@@ -45,6 +49,9 @@ private:
 
 	// Helper to clamp to PID min/max if exists
 	float clampVal(float val);
+
+	// Settings
+	bool passthrough;
 
 	// State of PID
 	float integral;

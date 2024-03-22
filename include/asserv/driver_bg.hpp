@@ -10,6 +10,7 @@ public:
 	~DriverBG();
 
 	void setPwm(float duty);
+	void setEnable(bool enabled);
 
 private:
 	bool reversed;

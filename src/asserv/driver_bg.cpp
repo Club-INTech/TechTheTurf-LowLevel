@@ -13,19 +13,8 @@ DriverBG::~DriverBG() {
 
 // The PID is clamped to max velocity rather than max duty 
 void DriverBG::setPwm(float velocity) {
-	if (velocity == 0.0f) { 
-		if (this->status) {
-			this->bg->disable();
-			this->status = false;
-		}
+	if (!this->status)
 		return;
-	}
-
-	if (!this->status) {
-		this->bg->setMotionControl(MotionControlType::velocity);
-		this->bg->enable();
-		this->status = true;
-	}
 
 	if (this->reversed)
 		velocity *= -1.0f;
@@ -37,4 +26,15 @@ void DriverBG::setPwm(float velocity) {
 	}*/
 
 	this->bg->setTarget(velocity);
+}
+
+void DriverBG::setEnable(bool enabled) {
+	if (!this->status && enabled) {
+		this->bg->setMotionControl(MotionControlType::velocity);
+		this->bg->enable();
+		this->status = true;
+	} else if (this->status && !enabled) {
+		this->bg->disable();
+		this->status = false;
+	}
 }

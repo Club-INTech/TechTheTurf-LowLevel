@@ -17,8 +17,7 @@ class ControlLoop
 public:
 	ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample,
-				float speedMultiplier);
+				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample);
 	~ControlLoop();
 
 	void start();
@@ -58,7 +57,6 @@ public:
 	mutex_t mutex;
 
 	float encoderWheelRadius;
-	float speedMultiplier;
 	uint32_t positionLoopDownsample;
 
 	bool running;

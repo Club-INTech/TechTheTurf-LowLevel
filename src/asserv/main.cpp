@@ -42,6 +42,7 @@ int main() {
 	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, ENCODER_RIGHT_REVERSE, 1);
 
 #ifdef ROBOT_MAIN
+
 #ifdef MAIN_USE_ODRIVE
 	CommODrive *odrive = new CommODrive(UART_INSTANCE, UART_TX, UART_RX);
 
@@ -54,12 +55,10 @@ int main() {
 	DriverBG *lDrv = new DriverBG(lBg, DRIVER_LEFT_REVERSE);
 	DriverBG *rDrv = new DriverBG(rBg, DRIVER_RIGHT_REVERSE);
 #endif
-	// Temp hack to bypass speed PID
-	float speedMul = 0.0f;
-#else
+
+#else // ! ROBOT_MAIN
 	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, DRIVER_LEFT_REVERSE);
 	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, DRIVER_RIGHT_REVERSE);
-	float speedMul = 1.0f;
 #endif
 
 	//lDrv->setDutyOffset(0.15f);
@@ -80,9 +79,12 @@ int main() {
 	lSpeedPid->setClamp(-1.0f, 1.0f);
 	rSpeedPid->setClamp(-1.0f, 1.0f);
 #else
-	// The main robot uses the BG, so the speed pid has 1 gain and clamps to max vel
+	// The main robot uses the BG/ODrive, so the speed pid has 1 gain and clamps to max vel
 	lSpeedPid->setClamp(-MAX_VELOCITY, MAX_VELOCITY);
 	rSpeedPid->setClamp(-MAX_VELOCITY, MAX_VELOCITY);
+	// Also enable passthrough to not have any regulation
+	lSpeedPid->setPassthrough(true);
+	rSpeedPid->setPassthrough(true);
 #endif
 
 	//float maxVal = 1.0f/lSpeedPid->Kp;
@@ -108,7 +110,7 @@ int main() {
 
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lSpeedAlim, rSpeedAlim,
-									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING, speedMul);
+									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
 	// Init motor control
 	//printf("Begin\n");

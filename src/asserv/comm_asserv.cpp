@@ -138,6 +138,9 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				memcpy(&f1, &data[1], sizeof(float));
 				memcpy(&f2, &data[1+4], sizeof(float));
 				this->cl->ctrl->setRawTarget(f1, f2);
+			} else if (subcmd == 3) { // Enable/Disable drivers
+				this->cl->drvLeft->setEnable(data[1]);
+				this->cl->drvRight->setEnable(data[1]);
 			}
 			break;
 		default:

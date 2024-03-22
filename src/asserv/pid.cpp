@@ -9,6 +9,7 @@ PID::PID(float Kp, float Ki, float Kd, float ramp, float lpf, float min, float m
 	setClamp(min,max);
 	setLpf(lpf);
 	setRamp(ramp);
+	setPassthrough(false);
 	reset();
 }
 
@@ -37,6 +38,10 @@ void PID::setRamp(float ramp) {
 	this->outRamp = ramp;
 }
 
+void PID::setPassthrough(bool enabled) {
+	this->passthrough = enabled;
+}
+
 float PID::clampVal(float val) {
 	if (this->min != 0)
 		val = std::max(this->min, val);
@@ -47,6 +52,9 @@ float PID::clampVal(float val) {
 
 // From: https://gist.github.com/bradley219/5373998
 float PID::calculate(float desired, float current, float dt) {
+	if (this->passthrough)
+		return clampVal(desired);
+
 	// Calculate error
 	float error = desired - current;
 

@@ -10,6 +10,7 @@ public:
 	~DriverODrive();
 
 	void setPwm(float velocity);
+	void setEnable(bool enabled);
 
 private:
 	uint8_t axis;

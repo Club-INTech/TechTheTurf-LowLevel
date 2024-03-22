@@ -42,11 +42,12 @@ Driver::Driver(uint fin, uint rin, bool reversed, uint resolution, float freq, f
 	setResolution(resolution);
 	setFreq(freq); // sets clkDiv inside
 
-	// This is not needed as 0% duty cycle is really 0V
+	// Put driver into standby
 	gpio_set_outover(this->pins, GPIO_OVERRIDE_LOW);
 	gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_LOW);
 	pwm_set_enabled(this->slice, false);
 	this->running = false;
+	this->braking = false;
 }
 
 Driver::~Driver() {
@@ -89,24 +90,12 @@ void Driver::setClkDiv(uint8_t divInt, uint8_t divFrac) {
 }
 
 void Driver::setPwm(float duty) {
+	// Bail if we're not running
+	if (!this->running)
+		return;
+
 	// Make sure we're in the the range
 	duty = std::clamp(duty,-1.0f,1.0f);
-
-	if (duty == 0) {
-		if (!running)
-			return;
-
-		running = false;
-		gpio_set_outover(this->pins, GPIO_OVERRIDE_LOW);
-		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_LOW);
-		pwm_set_enabled(this->slice, false);
-		return;
-	} else if (!running) {
-		running = true;
-		gpio_set_outover(this->pins, GPIO_OVERRIDE_NORMAL);
-		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_NORMAL);
-		pwm_set_enabled(this->slice, true);
-	}
 
 	bool fwd = true;
 
@@ -125,12 +114,41 @@ void Driver::setPwm(float duty) {
 
 	setRawPwm(duty);
 
+	// Brake
+	if (duty == 0.0f) {
+		if (this->braking)
+			return;
+		gpio_set_outover(this->pins, GPIO_OVERRIDE_HIGH);
+		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_HIGH);
+		this->braking = true;
+		return;
+	} else if (this->braking) {
+		gpio_set_outover(this->pins, GPIO_OVERRIDE_NORMAL);
+		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_NORMAL);
+		this->braking = false;
+	}
+
+	// Otherwise standard control
 	if (fwd) {
 		gpio_set_outover(this->pins, GPIO_OVERRIDE_NORMAL);
 		gpio_set_outover(this->pins + 1, PWM_OTHER_STATE);
 	} else {
 		gpio_set_outover(this->pins, PWM_OTHER_STATE);
 		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_NORMAL);
+	}
+}
+
+void Driver::setEnable(bool enabled) {
+	if (!this->running && enabled) {
+		this->running = true;
+		gpio_set_outover(this->pins, GPIO_OVERRIDE_NORMAL);
+		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_NORMAL);
+		pwm_set_enabled(this->slice, true);
+	} else if (this->running && !enabled) {
+		this->running = false;
+		gpio_set_outover(this->pins, GPIO_OVERRIDE_LOW);
+		gpio_set_outover(this->pins + 1, GPIO_OVERRIDE_LOW);
+		pwm_set_enabled(this->slice, false);
 	}
 }
 

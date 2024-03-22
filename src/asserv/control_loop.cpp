@@ -4,8 +4,7 @@
 
 ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample,
-				float speedMultiplier) {
+				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample) {
 	this->encLeft = encLeft;
 	this->encRight = encRight;
 	this->drvLeft = drvLeft;
@@ -24,7 +23,6 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLef
 
 	this->encoderWheelRadius = encoderWheelRadius;
 	this->positionLoopDownsample = positionLoopDownsample;
-	this->speedMultiplier = speedMultiplier;
 
 	this->lastTime = get_absolute_time();
 	this->lastTimePos = this->lastTime;
@@ -39,8 +37,10 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLef
 }
 
 ControlLoop::~ControlLoop() {
-	drvLeft->setPwm(0.0);
-	drvRight->setPwm(0.0);
+	this->drvLeft->setPwm(0.0);
+	this->drvRight->setPwm(0.0);
+	this->drvLeft->setEnable(false);
+	this->drvRight->setEnable(false);
 }
 
 void ControlLoop::start() {
@@ -64,6 +64,8 @@ void ControlLoop::start() {
 	this->rPll->reset();
 	this->lastCountLeft = 0;
 	this->lastCountRight = 0;
+	this->drvLeft->setEnable(true);
+	this->drvRight->setEnable(true);
 	this->running = true;
 	mutex_exit(&this->mutex);
 }
@@ -75,6 +77,8 @@ void ControlLoop::stop() {
 	this->running = false;
 	this->drvLeft->setPwm(0.0f);
 	this->drvRight->setPwm(0.0f);
+	this->drvLeft->setEnable(false);
+	this->drvRight->setEnable(false);
 	mutex_exit(&this->mutex);
 }
 
@@ -111,8 +115,8 @@ void ControlLoop::work() {
 	this->rPll->update(rCnt - this->lastCountRight, dt);
 
 	// Estimate current speed
-	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius * this->speedMultiplier;
-	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius * this->speedMultiplier;
+	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
+	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
 
 	// Update last counts
 	this->lastCountLeft = lCnt;

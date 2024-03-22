@@ -17,8 +17,10 @@ public:
 	void setResolution(uint resolution);
 	// Set the offset to the PWM duty cycle to avoid the useless range of motors
 	void setDutyOffset(float offset);
-	// Duty cycle: + for forwards, - for backwards, 0 for idle (not braking)
+	// Duty cycle: + for forwards, - for backwards, 0 for braking
 	void setPwm(float duty);
+	// Turn on / off the drivers
+	void setEnable(bool enabled);
 
 	// Low level operations
 
@@ -37,6 +39,7 @@ private:
 	uint slice;
 	bool reversed;
 
+	bool braking;
 	bool running;
 	float currentDuty;
 	uint resolution;
