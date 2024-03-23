@@ -95,7 +95,7 @@ target_link_libraries(ll_asserv_pamiserable INTERFACE ll_common_asserv)
 add_library(ll_asserv_main INTERFACE)
 target_sources(ll_asserv_main INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/comm_bg.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver_bg.cpp"
                                         "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/comm_odrive.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver_odrive.cpp")
-target_compile_definitions(ll_asserv_main INTERFACE ASSERV ROBOT_MAIN MAIN_USE_ODRIVE)
+target_compile_definitions(ll_asserv_main INTERFACE ASSERV ROBOT_MAIN)
 target_link_libraries(ll_asserv_main INTERFACE ll_common_asserv)
 
 # Actuators

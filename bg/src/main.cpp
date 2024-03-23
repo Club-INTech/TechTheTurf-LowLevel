@@ -11,6 +11,7 @@
 
 // Define to get aligment values on serial port and don't do anything
 //#define ALIGN_SENSOR
+#define USE_PRECALIB
 #define ENABLE_DEBUG
 
 // Motor definitions
@@ -28,21 +29,33 @@
 
 #ifdef RIGHT_DRIVER
 #define COMM_UID 0x1
-#else
+#elif LEFT_DRIVER
 #define COMM_UID 0x0
+#else // No side
+// Unknown driver ID
+#define COMM_UID 0xFF
 #endif
 
 // Sensor aligment definitions
 
+// Got 3.14159274 for the elec offset on both, round it up to pi
 #ifdef RIGHT_DRIVER
-#define SENSOR_ZERO_ELEC_OFFSET 0
-#define SENSOR_DIRECTION Direction::CCW
-#else
-#define SENSOR_ZERO_ELEC_OFFSET 0
+#define SENSOR_ZERO_ELEC_OFFSET M_PI
 #define SENSOR_DIRECTION Direction::CW
+#elif LEFT_DRIVER
+#define SENSOR_ZERO_ELEC_OFFSET M_PI
+#define SENSOR_DIRECTION Direction::CW
+#else // No side
+// Not calibrated
+#undef USE_PRECALIB
 #endif
 
 // ----------------- End of Config -----------------
+
+// We can't calibrate and use the precalibration..
+#ifdef ALIGN_SENSOR
+#undef USE_PRECALIB
+#endif
 
 // Motor instance
 BLDCMotor motor = BLDCMotor(MOTOR_PAIRS);
@@ -119,7 +132,7 @@ void setup() {
 	//  maximal velocity of the position control
 	motor.velocity_limit = 4;
 
-#ifndef ALIGN_SENSOR
+#ifdef USE_PRECALIB
 	// Setup sensor values to avoid having to recalibrate every setup
 	motor.zero_electric_angle = SENSOR_ZERO_ELEC_OFFSET;
 	motor.sensor_direction = SENSOR_DIRECTION;
@@ -133,6 +146,9 @@ void setup() {
 	// align encoder and start FOC
 	motor.initFOC();
 
+	// Start with the motors turned off
+	motor.disable();
+
 #ifdef ALIGN_SENSOR
 	// Print the calibrated info to the serial port every 5s
 	for (;;) {
@@ -145,7 +161,7 @@ void setup() {
 			COMM_SERIAL.println("UNKNOWN");
 
 		COMM_SERIAL.print("Sensor zero: ");
-		COMM_SERIAL.println(motor.zero_electric_angle);
+		COMM_SERIAL.println(motor.zero_electric_angle,8);
 		COMM_SERIAL.println("--------");
 		delay(5000);
 	}
