@@ -29,8 +29,6 @@ void comm_thread() {
 	}
 }
 
-#define ASSERV_PERIOD_US 2000
-
 int main() {
 	// Init PicoSDK
 	stdio_init_all();

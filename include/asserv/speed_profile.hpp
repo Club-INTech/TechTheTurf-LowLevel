@@ -1,5 +1,21 @@
 #pragma once
 
+/*
+	Small Heads-up:
+	This is implemented using integration, which accumulates errors.
+	Theses errors are as big as the timestep is small or too big, keep it reasonable.
+	The ~0.2ms used in the asserv here seems to work pretty much perfectly.
+	To improve it you could use doubles or use analytical expressions for the position.
+	Keep in mind that there also is an error that accumulates in the time accumulator.
+	For what we're doing, this is relatively fine.
+
+	Note: It seems to struggle with very low values of float numbers not very well representable.
+		For example 0.00001 will struggle a lot.
+
+	Note 2: After some testing it looks like just changing time & pos to double fixes it mostly.
+		We probably won't be doing it here though as it costs more ressources.
+*/
+
 class SpeedProfile
 {
 public:
@@ -19,6 +35,8 @@ public:
 	float getTotalTime();
 	// Returns the current position in the profile
 	float getPosition();
+	// Returns the current velocity in the profile
+	float getVelocity();
 	bool isDone();
 
 	void reset();
@@ -43,6 +61,6 @@ private:
 	float target;
 
 	float vmax, amax;
-	float time, pos;
+	float time, position, velocity;
 	
 };

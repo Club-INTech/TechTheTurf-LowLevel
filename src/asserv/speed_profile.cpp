@@ -64,7 +64,11 @@ float SpeedProfile::getTotalTime() {
 }
 
 float SpeedProfile::getPosition() {
-	return this->pos;
+	return this->position;
+}
+
+float SpeedProfile::getVelocity() {
+	return this->velocity;
 }
 
 float SpeedProfile::process(float dt) {
@@ -72,30 +76,39 @@ float SpeedProfile::process(float dt) {
 		return this->target;
 
 	this->time += dt;
-	float velocity = 0;
+	this->velocity = 0;
 
 	if (this->time < this->ta) {
-		velocity = this->time * this->amax;
+		this->velocity = this->time * this->amax;
 	} else if (this->trap)  {
 		if (this->time < this->ta+this->tc) {
-			velocity = this->vmax;
+			this->velocity = this->vmax;
 		} else if (this->time < 2*this->ta+this->tc) {
-			velocity = this->vmax - (this->time-(this->ta+this->tc)) * this->amax;
+			this->velocity = this->vmax - (this->time-(this->ta+this->tc)) * this->amax;
 		} else {
 			this->done = true;
 			return this->target;
 		}
 	} else {
 		if (this->time < 2*this->ta) {
-			velocity = this->vmaxTrig - (this->time-this->ta) * this->amax;
+			this->velocity = this->vmaxTrig - (this->time-this->ta) * this->amax;
 		} else {
 			this->done = true;
 			return this->target;
 		}
 	}
 	
-	this->pos += this->direction * velocity*dt;
-	return this->pos;
+	this->position += this->direction * this->velocity*dt;
+
+	// This method of integrating will bring about some errors
+	// So if we overshot the position but the time is not up yet
+	// Just finish up anyways.
+	if (this->position >= this->target) {
+		this->done = true;
+		return this->target;
+	}
+
+	return this->position;
 }
 
 bool SpeedProfile::isDone() {
@@ -104,7 +117,8 @@ bool SpeedProfile::isDone() {
 
 void SpeedProfile::reset() {
 	this->done = false;
-	this->pos = 0;
+	this->position = 0;
+	this->velocity = 0;
 	this->time = 0;
 	this->direction = 0;
 	this->vmaxTrig = 0;

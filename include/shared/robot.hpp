@@ -5,6 +5,13 @@
 
 #ifdef ASSERV
 
+// Global Asserv defines
+
+// 500Hz
+#define ASSERV_PERIOD_US 2000
+
+// Specific per-robot defines
+
 #ifdef ROBOT_PAMI
 	// Control Loop Config
 	#define POSITION_DOWNSAMPLING 4
