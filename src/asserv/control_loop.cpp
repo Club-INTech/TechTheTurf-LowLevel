@@ -75,6 +75,7 @@ void ControlLoop::stop() {
 		return;
 	mutex_try_enter(&this->mutex, nullptr);
 	this->running = false;
+	this->ctrl->reset(); // State to reachedTarget
 	this->drvLeft->setPwm(0.0f);
 	this->drvRight->setPwm(0.0f);
 	this->drvLeft->setEnable(false);

@@ -32,16 +32,15 @@ void comm_thread() {
 int main() {
 	// Init PicoSDK
 	stdio_init_all();
-	//sleep_ms(2000);
-	//printf("Hello\n");
 
-	// Init encoders & drivers
+	// Init Encoders
 	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, ENCODER_LEFT_REVERSE, 0);
 	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, ENCODER_RIGHT_REVERSE, 1);
 
+	// Init Motor Drivers
 #ifdef ROBOT_MAIN
 
-#ifdef MAIN_USE_ODRIVE
+#ifdef ROBOT_MAIN_ODRIVE
 	CommODrive *odrive = new CommODrive(UART_INSTANCE, UART_TX, UART_RX);
 
 	DriverODrive *lDrv = new DriverODrive(odrive, ODRIVE_LEFT_AXIS, DRIVER_LEFT_REVERSE);
@@ -59,9 +58,6 @@ int main() {
 	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, DRIVER_RIGHT_REVERSE);
 #endif
 
-	//lDrv->setDutyOffset(0.15f);
-	//rDrv->setDutyOffset(0.15f);
-
 	// Init odometry
 	Odometry *odo = new Odometry(ENCODER_DIST);
 
@@ -72,25 +68,21 @@ int main() {
 	PID *dstPid = new PID(DST_PID_KP, DST_PID_KI, DST_PID_KD);
 	PID *anglePid = new PID(ANGLE_PID_KP, ANGLE_PID_KI, ANGLE_PID_KD);
 
-#ifndef ROBOT_MAIN
-	// All other robots use PWM
-	lSpeedPid->setClamp(-1.0f, 1.0f);
-	rSpeedPid->setClamp(-1.0f, 1.0f);
-#else
+	dstPid->setClamp(-DST_PID_CLAMP, DST_PID_CLAMP);
+	anglePid->setClamp(-ANGLE_PID_CLAMP, ANGLE_PID_CLAMP);
+
+#ifdef ROBOT_MAIN
 	// The main robot uses the BG/ODrive, so the speed pid has 1 gain and clamps to max vel
 	lSpeedPid->setClamp(-MAX_VELOCITY, MAX_VELOCITY);
 	rSpeedPid->setClamp(-MAX_VELOCITY, MAX_VELOCITY);
 	// Also enable passthrough to not have any regulation
 	lSpeedPid->setPassthrough(true);
 	rSpeedPid->setPassthrough(true);
+#else
+	// All other robots use PWM
+	lSpeedPid->setClamp(-1.0f, 1.0f);
+	rSpeedPid->setClamp(-1.0f, 1.0f);
 #endif
-
-	//float maxVal = 1.0f/lSpeedPid->Kp;
-	//dstPid->setClamp(-maxVal,maxVal);
-	//anglePid->setClamp(-maxVal,maxVal);
-
-	dstPid->setClamp(-3000.0f, 3000.0f);
-	anglePid->setClamp(-100000.0f, 100000.0f);
 
 	// Setup PLLs
 	PLL *lPll = new PLL(9.0f);
@@ -101,17 +93,17 @@ int main() {
 	AccelLimiter *rSpeedAlim = new AccelLimiter(MAX_ACCEL);
 
 	// Setup trapezoidal speed profile
-	SpeedProfile *speedProfile = new SpeedProfile(MAX_LIN_VELOCITY, MAX_LIN_ACCEL);
+	SpeedProfile *speedProfileDst = new SpeedProfile(MAX_LIN_VELOCITY, MAX_LIN_ACCEL);
+	SpeedProfile *speedProfileAngle = new SpeedProfile(MAX_TURN_VELOCITY, MAX_TURN_ACCEL);
 
 	// Setup the controller
-	Controller *ctrl = new Controller(odo, speedProfile);
+	Controller *ctrl = new Controller(odo, speedProfileDst, speedProfileAngle, TOLERANCE_DST, TOLERANCE_ANGLE);
 
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lSpeedAlim, rSpeedAlim,
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
 	// Init motor control
-	//printf("Begin\n");
 	multicore_launch_core1(comm_thread);
 
 	// Send the ControlLoop ref over to the other core

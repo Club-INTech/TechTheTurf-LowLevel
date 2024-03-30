@@ -82,11 +82,16 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			//printf("dst %f theta %f\n", f1, f2);
 			this->cl->ctrl->setTarget(f1, f2);
 		case 13: // Write CL vars
-			if (subcmd == 0) { // SpeedProfile
+			if (subcmd == 0) { // Dst SpeedProfile
 				memcpy(&f1, &data[1], sizeof(float));
 				memcpy(&f2, &data[1+4], sizeof(float));
-				this->cl->ctrl->sp->setVmax(f1);
-				this->cl->ctrl->sp->setAmax(f2);
+				this->cl->ctrl->spDst->setVmax(f1);
+				this->cl->ctrl->spDst->setAmax(f2);
+			} else if (subcmd == 1) { // Angle SpeedProfile
+				memcpy(&f1, &data[1], sizeof(float));
+				memcpy(&f2, &data[1+4], sizeof(float));
+				this->cl->ctrl->spAngle->setVmax(f1);
+				this->cl->ctrl->spAngle->setAmax(f2);
 			}
 			break;
 		// Read operations, can't be deferred
@@ -113,10 +118,16 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			this->sendData[0] = this->cl->ctrl->isReady();
 			break;
 		case 12: // Read CL vars
-			if (subcmd == 0) { // SpeedProfile
+			if (subcmd == 0) { // Dst SpeedProfile
 				this->sendDataSize = 2*sizeof(float);
-				f1 = this->cl->ctrl->sp->getVmax();
-				f2 = this->cl->ctrl->sp->getAmax();
+				f1 = this->cl->ctrl->spDst->getVmax();
+				f2 = this->cl->ctrl->spDst->getAmax();
+				memcpy(&this->sendData[0], &f1, sizeof(float));
+				memcpy(&this->sendData[4], &f2, sizeof(float));
+			} else if (subcmd == 1) { // Angle SpeedProfile
+				this->sendDataSize = 2*sizeof(float);
+				f1 = this->cl->ctrl->spAngle->getVmax();
+				f2 = this->cl->ctrl->spAngle->getAmax();
 				memcpy(&this->sendData[0], &f1, sizeof(float));
 				memcpy(&this->sendData[4], &f2, sizeof(float));
 			}
@@ -141,6 +152,9 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			} else if (subcmd == 3) { // Enable/Disable drivers
 				this->cl->drvLeft->setEnable(data[1]);
 				this->cl->drvRight->setEnable(data[1]);
+			} else if (subcmd == 4) { // Get asserv state
+				this->sendDataSize = 1;
+				this->sendData[0] = this->cl->ctrl->getState();
 			}
 			break;
 		default:

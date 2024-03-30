@@ -1,9 +1,12 @@
 #include <math.h>
 #include <asserv/controller.hpp>
 
-Controller::Controller(Odometry *odo, SpeedProfile *sp) {
+Controller::Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance) {
 	this->odo = odo;
-	this->sp = sp;
+	this->spDst = spDst;
+	this->spAngle = spAngle;
+	this->dstTolerance = dstTolerance;
+	this->angleTolerance = angleTolerance;
 	this->reset();
 }
 
@@ -18,10 +21,13 @@ float Controller::getDstTarget() {
 	if (this->state == ControllerState::reachingTheta)
 		return target;
 
-	return target + this->sp->getPosition();
+	return target + this->spDst->getPosition();
 }
 
 float Controller::getAngleTarget() {
+	if (this->state == ControllerState::reachingTheta)
+		return this->oldTarget.theta + this->spAngle->getPosition();
+
 	return this->target.theta;
 }
 
@@ -39,21 +45,27 @@ bool Controller::isReady() {
 	return this->state == ControllerState::reachedTarget;
 }
 
+ControllerState Controller::getState() {
+	return this->state;
+}
+
 void Controller::work(float dt) {
 	if (this->state == ControllerState::reachedTarget)
 		return;
 
 	if (this->state == ControllerState::reachingTheta) {
-		if (abs(this->target.theta-this->odo->theta) > (2.0f*(M_PI/180.0f)))
+		this->spAngle->process(dt);
+
+		if (!this->spAngle->isDone() && abs(this->target.theta-this->odo->theta) > this->angleTolerance)
 			return;
 		
 		this->state = ControllerState::reachingDst;
 	}
 
 	if (this->state == ControllerState::reachingDst) {
-		this->sp->process(dt);
+		this->spDst->process(dt);
 
-		if (!this->sp->isDone() && abs(this->target.dst-this->odo->dst) > 20.0f)
+		if (!this->spDst->isDone() && abs(this->target.dst-this->odo->dst) > this->dstTolerance)
 			return;
 
 		this->state = ControllerState::reachedTarget;
@@ -70,7 +82,8 @@ void Controller::movePolar(float dst, float theta) {
 void Controller::setTarget(float dst, float theta) {
 	this->oldTarget = this->target;
 	this->target.set(dst, theta);
-	this->sp->initMove(dst - this->oldTarget.dst);
+	this->spDst->initMove(dst - this->oldTarget.dst);
+	this->spAngle->initMove(theta - this->oldTarget.theta);
 	this->state = ControllerState::reachingTheta;
 }
 
@@ -82,5 +95,6 @@ void Controller::reset(float dst, float theta) {
 	this->target.set(dst, theta);
 	this->oldTarget.set(dst, theta);
 	this->state = ControllerState::reachedTarget;
-	this->sp->reset();
+	this->spDst->reset();
+	this->spAngle->reset();
 }

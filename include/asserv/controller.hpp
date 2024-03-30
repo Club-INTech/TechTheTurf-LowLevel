@@ -28,7 +28,7 @@ enum ControllerState
 class Controller
 {
 public:
-	Controller(Odometry *odo, SpeedProfile *sp);
+	Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance);
 	~Controller();
 
 	float getDstTarget();
@@ -37,15 +37,20 @@ public:
 	void work(float dt);
 
 	bool isReady();
+	ControllerState getState();
 	void movePolar(float dst, float theta);
 	void setTarget(float dst, float theta);
 	void setRawTarget(float dst, float theta);
 	void reset(float dst=0, float theta=0);
 
 	Odometry *odo;
-	SpeedProfile *sp;
+	SpeedProfile *spDst;
+	SpeedProfile *spAngle;
 
 private:
+	float dstTolerance;
+	float angleTolerance;
+
 	Target oldTarget;
 	Target target;
 	ControllerState state;

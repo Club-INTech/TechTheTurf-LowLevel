@@ -2,6 +2,7 @@
 
 #include <hardware/uart.h>
 #include <hardware/i2c.h>
+#include <cmath>
 
 #ifdef ASSERV
 
@@ -15,14 +16,29 @@
 #ifdef ROBOT_PAMI
 	// Control Loop Config
 	#define POSITION_DOWNSAMPLING 4
+
+	// Absolute limits on the motor control
 	// rads/s
 	#define MAX_VELOCITY 1000.0f
 	// rads/s^2
 	#define MAX_ACCEL 4000.0f
+
+	// Trapezoidal profile for distance & angle
 	// mm/s
 	#define MAX_LIN_VELOCITY 600.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 1000.0f
+	// rad/s
+	#define MAX_TURN_VELOCITY 6.0f
+	// rad/s^2
+	#define MAX_TURN_ACCEL 3.0f
+
+	// Tolerances for the controller
+	// mm
+	#define TOLERANCE_DST 5.0f
+	// rad
+	#define TOLERANCE_ANGLE (1.0f*(M_PI/180.0f))
+
 	// PIDs
 	#ifdef PAMINABLE
 		// Speed PID
@@ -34,11 +50,13 @@
 		#define DST_PID_KP 20.0f
 		#define DST_PID_KI 1.0f
 		#define DST_PID_KD 0.5f
+		#define DST_PID_CLAMP 3000.0f
 
 		// Angle PID
 		#define ANGLE_PID_KP 4000.0f
 		#define ANGLE_PID_KI 70.0f
 		#define ANGLE_PID_KD 80.0f
+		#define ANGLE_PID_CLAMP 100000.0f
 	#else
 		// Speed PID
 		#define SPEED_PID_KP 0.001f
@@ -49,11 +67,13 @@
 		#define DST_PID_KP 20.0f
 		#define DST_PID_KI 1.0f
 		#define DST_PID_KD 0.5f
+		#define DST_PID_CLAMP 3000.0f
 
 		// Angle PID
 		#define ANGLE_PID_KP 4000.0f
 		#define ANGLE_PID_KI 70.0f
 		#define ANGLE_PID_KD 80.0f
+		#define ANGLE_PID_CLAMP 100000.0f
 	#endif
 
 	// I2C
@@ -61,37 +81,20 @@
 	#define I2C_ADDR 0x69
 
 	// Pins
-	#ifdef PAMI_CARTE_2A
-		// Temporary pins
-		#define I2C_SDA 12
-		#define I2C_SCL 13
+	#define I2C_SDA 0
+	#define I2C_SCL 1
 
-		#define LEFT_MOTOR_FW_PIN 20
-		#define LEFT_MOTOR_RW_PIN 21
-		#define RIGHT_MOTOR_FW_PIN 27
-		#define RIGHT_MOTOR_RW_PIN 26
+	// On the PCB, Left & Right incremental & encoder are inversed
+	// from original pin mapping, so we inverse it here...
+	#define LEFT_MOTOR_FW_PIN 4
+	#define LEFT_MOTOR_RW_PIN 5
+	#define RIGHT_MOTOR_FW_PIN 2
+	#define RIGHT_MOTOR_RW_PIN 3
 
-		#define LEFT_INCREMENTAL_A_PIN 17
-		#define LEFT_INCREMENTAL_B_PIN 16
-		#define RIGHT_INCREMENTAL_A_PIN 19
-		#define RIGHT_INCREMENTAL_B_PIN 18
-	#else
-		// Actual card pins
-		#define I2C_SDA 0
-		#define I2C_SCL 1
-
-		// On the PCB, Left & Right incremental & encoder are inversed
-		// from original pin mapping, so we inverse it here...
-		#define LEFT_MOTOR_FW_PIN 4
-		#define LEFT_MOTOR_RW_PIN 5
-		#define RIGHT_MOTOR_FW_PIN 2
-		#define RIGHT_MOTOR_RW_PIN 3
-
-		#define LEFT_INCREMENTAL_A_PIN 8
-		#define LEFT_INCREMENTAL_B_PIN 9
-		#define RIGHT_INCREMENTAL_A_PIN 6
-		#define RIGHT_INCREMENTAL_B_PIN 7
-	#endif
+	#define LEFT_INCREMENTAL_A_PIN 8
+	#define LEFT_INCREMENTAL_B_PIN 9
+	#define RIGHT_INCREMENTAL_A_PIN 6
+	#define RIGHT_INCREMENTAL_B_PIN 7
 
 	// Mech constants
 	#ifdef PAMINABLE
@@ -121,14 +124,32 @@
 #ifdef ROBOT_MAIN
 	// Control Loop Config
 	#define POSITION_DOWNSAMPLING 4
+
+	// Enable to use ODrive, otherwise uses BGs
+	//#define ROBOT_MAIN_ODRIVE
+
+	// Absolute limits on the motor control
 	// rads/s
 	#define MAX_VELOCITY 30.0f
 	// rads/s^2
 	#define MAX_ACCEL 60.0f
+
+	// Trapezoidal profile for distance & angle
 	// mm/s
 	#define MAX_LIN_VELOCITY 600.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 1000.0f
+	// rad/s
+	#define MAX_TURN_VELOCITY 6.0f
+	// rad/s^2
+	#define MAX_TURN_ACCEL 3.0f
+
+	// Tolerances for the controller
+	// mm
+	#define TOLERANCE_DST 5.0f
+	// rad
+	#define TOLERANCE_ANGLE (1.0f*(M_PI/180.0f))
+
 	// PIDs
 	// Speed PID
 	#define SPEED_PID_KP 1.0f
@@ -139,11 +160,13 @@
 	#define DST_PID_KP 1.0f
 	#define DST_PID_KI 0.0f
 	#define DST_PID_KD 0.1f
+	#define DST_PID_CLAMP 3000.0f
 
 	// Angle PID
 	#define ANGLE_PID_KP 40.0f
 	#define ANGLE_PID_KI 2.0f
 	#define ANGLE_PID_KD 0.0f
+	#define ANGLE_PID_CLAMP 100000.0f
 
 	// I2C
 	#define I2C_INSTANCE i2c0
@@ -176,7 +199,7 @@
 	// Mech Constants
 
 	#define ENCODER_WHEEL_RADIUS (53.5f/2.0f)
-	#define ENCODER_DIST 114.0f
+	#define ENCODER_DIST 115.3f
 
 	#define ENCODER_LEFT_REVERSE false
 	#define ENCODER_RIGHT_REVERSE true

@@ -103,7 +103,7 @@ float SpeedProfile::process(float dt) {
 	// This method of integrating will bring about some errors
 	// So if we overshot the position but the time is not up yet
 	// Just finish up anyways.
-	if (this->position >= this->target) {
+	if (std::abs(this->position) >= std::abs(this->target)) {
 		this->done = true;
 		return this->target;
 	}
