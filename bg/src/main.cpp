@@ -12,12 +12,11 @@
 // Define to get aligment values on serial port and don't do anything
 //#define ALIGN_SENSOR
 #define USE_PRECALIB
-#define ENABLE_DEBUG
+//#define ENABLE_DEBUG
 
 // Motor definitions
 
 #define VOLTAGE_SUPPLY 24
-//#define MOTOR_PAIRS (18/2)
 #define MOTOR_PAIRS 10
 
 // Comm serial definitions
@@ -58,7 +57,7 @@
 #endif
 
 // Motor instance
-BLDCMotor motor = BLDCMotor(MOTOR_PAIRS);
+BLDCMotor motor = BLDCMotor(MOTOR_PAIRS/*, 0.65f, 97.0f*/);
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL, A_PHASE_VH, A_PHASE_VL, A_PHASE_WH, A_PHASE_WL);
 LowsideCurrentSense currentSense = LowsideCurrentSense(0.003f, -64.0f/7.0f, A_OP1_OUT, A_OP2_OUT, A_OP3_OUT);
 
@@ -66,7 +65,7 @@ LowsideCurrentSense currentSense = LowsideCurrentSense(0.003f, -64.0f/7.0f, A_OP
 HallSensor encoder = HallSensor(A_HALL1, A_HALL2, A_HALL3, MOTOR_PAIRS);
 
 // Comm instance
-CommBG comm = CommBG(COMM_UID, COMM_SERIAL, motor);
+CommBG comm = CommBG(COMM_UID, COMM_SERIAL, A_USART2_RX, A_USART2_TX, motor);
 
 // interrupt routine initialization
 void doA(){encoder.handleA();}
@@ -76,6 +75,10 @@ void doC(){encoder.handleC();}
 void setup() {
 	// Start serial early to handle debug if enabled
 	COMM_SERIAL.begin(COMM_BAUD);
+
+#if !defined(ALIGN_SENSOR) && !defined(ENABLE_DEBUG)
+	comm.begin();
+#endif
 
 #ifdef ENABLE_DEBUG
 	SimpleFOCDebug::enable(&COMM_SERIAL);
@@ -111,6 +114,8 @@ void setup() {
 
 	// set motion control loop to be used
 	motor.controller = MotionControlType::velocity;
+
+	motor.torque_controller = TorqueControlType::foc_current;
 
 	// contoller configuration 
 	// default parameters in defaults.h

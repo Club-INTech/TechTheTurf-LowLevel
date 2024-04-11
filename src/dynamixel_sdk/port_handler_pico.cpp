@@ -118,8 +118,8 @@ int PortHandlerPico::writePort(uint8_t *packet, int length)
 
 	uart_write_blocking(this->uart, packet, length);
 	uart_tx_wait_blocking(this->uart);	
-	for (int i=0; i<length; i++)
-		uart_getc(this->uart);
+	/*for (int i=0; i<length; i++)
+		uart_getc(this->uart);*/
 
 	setTxDisable();
 
@@ -217,11 +217,13 @@ void PortHandlerPico::setPowerOff()
 
 void PortHandlerPico::setTxEnable()
 {
+	gpio_set_function(this->rx, GPIO_FUNC_NULL);
 	gpio_set_function(this->tx, GPIO_FUNC_UART);
 }
 
 void PortHandlerPico::setTxDisable()
 {
+	gpio_set_function(this->rx, GPIO_FUNC_UART);
 	gpio_set_function(this->tx, GPIO_FUNC_NULL);
 	//uart_tx_wait_blocking(this->uart);
 }

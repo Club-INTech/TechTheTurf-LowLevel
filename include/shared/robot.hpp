@@ -136,7 +136,7 @@
 
 	// Trapezoidal profile for distance & angle
 	// mm/s
-	#define MAX_LIN_VELOCITY 600.0f
+	#define MAX_LIN_VELOCITY 1000.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 1000.0f
 	// rad/s
@@ -232,8 +232,8 @@
 	#define I2C_SDA 0
 	#define I2C_SCL 1
 
-	#define DYN_UART_TX 12
-	#define DYN_UART_RX 13
+	#define DYN_UART_TX 16
+	#define DYN_UART_RX 17
 
 	#define ELEVATOR_STEP 3
 	#define ELEVATOR_DIR 2
@@ -254,10 +254,8 @@
 	#define ELEVATOR_REVERSE true
 
 	// Solar pannel arm angles
-	//#define ARM_DEPLOYED_ANGLE 270.0
-	//#define ARM_FOLDED_ANGLE 354.0
-	#define ARM_DEPLOYED_ANGLE 82.2
-	#define ARM_FOLDED_ANGLE 186.2
+	#define ARM_DEPLOYED_ANGLE 264.0
+	#define ARM_FOLDED_ANGLE 180.0
 
 #endif
 
