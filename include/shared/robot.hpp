@@ -28,10 +28,14 @@
 	#define MAX_LIN_VELOCITY 600.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 1000.0f
+	// mm/s^2
+	#define MAX_LIN_ESTOP_ACCEL 2000.0f
 	// rad/s
 	#define MAX_TURN_VELOCITY 6.0f
 	// rad/s^2
 	#define MAX_TURN_ACCEL 3.0f
+	// rad/s^2
+	#define MAX_TURN_ESTOP_ACCEL 6.0f
 
 	// Tolerances for the controller
 	// mm
@@ -139,10 +143,14 @@
 	#define MAX_LIN_VELOCITY 1000.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 1000.0f
+	// mm/s^2
+	#define MAX_LIN_ESTOP_ACCEL 2000.0f
 	// rad/s
 	#define MAX_TURN_VELOCITY 6.0f
 	// rad/s^2
 	#define MAX_TURN_ACCEL 3.0f
+	// rad/s^2
+	#define MAX_TURN_ESTOP_ACCEL 6.0f
 
 	// Tolerances for the controller
 	// mm
@@ -163,9 +171,9 @@
 	#define DST_PID_CLAMP 3000.0f
 
 	// Angle PID
-	#define ANGLE_PID_KP 40.0f
-	#define ANGLE_PID_KI 2.0f
-	#define ANGLE_PID_KD 0.0f
+	#define ANGLE_PID_KP 80.0f
+	#define ANGLE_PID_KI 5.0f
+	#define ANGLE_PID_KD 10.0f
 	#define ANGLE_PID_CLAMP 100000.0f
 
 	// I2C
@@ -198,8 +206,8 @@
 
 	// Mech Constants
 
-	#define ENCODER_WHEEL_RADIUS (53.5f/2.0f)
-	#define ENCODER_DIST 115.3f
+	#define ENCODER_WHEEL_RADIUS (53.754f/2.0f)
+	#define ENCODER_DIST 115.2f
 
 	#define ENCODER_LEFT_REVERSE false
 	#define ENCODER_RIGHT_REVERSE true
@@ -220,10 +228,10 @@
 	#define DYN_BAUDRATE 57600
 	#define DYN_PROTO_VER 2.0
 
-	//#define ARM_DEPLOY_DYN_ID 1
-	//#define ARM_TURN_DYN_ID 14
-	#define ARM_DEPLOY_DYN_ID 16
-	#define ARM_TURN_DYN_ID 15
+	#define RIGHT_ARM_DEPLOY_DYN_ID 16
+	#define RIGHT_ARM_TURN_DYN_ID 15
+	#define LEFT_ARM_DEPLOY_DYN_ID 10
+	#define LEFT_ARM_TURN_DYN_ID 11
 
 	// Stepper for elevator
 	#define ELEVATOR_STEPS_PER_ROT 200
@@ -254,8 +262,10 @@
 	#define ELEVATOR_REVERSE true
 
 	// Solar pannel arm angles
-	#define ARM_DEPLOYED_ANGLE 264.0
-	#define ARM_FOLDED_ANGLE 180.0
+	#define RIGHT_ARM_DEPLOYED_ANGLE 170.0
+	#define RIGHT_ARM_FOLDED_ANGLE 285.0
+	#define LEFT_ARM_DEPLOYED_ANGLE 92.3
+	#define LEFT_ARM_FOLDED_ANGLE 348.2
 
 #endif
 

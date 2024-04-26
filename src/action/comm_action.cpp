@@ -1,12 +1,13 @@
 #include <action/comm_action.hpp>
 #include <algorithm>
 
-CommAction::CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Elevator *elev, Arm *arm) : Comm(sdaPin, sclPin, addr, i2c) {
+CommAction::CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Elevator *elev, Arm *rightArm, Arm *leftArm) : Comm(sdaPin, sclPin, addr, i2c) {
 	this->cmd = -1;
 	this->working = false;
 	this->queued = false;
 	this->elev = elev;
-	this->arm = arm;
+	this->rightArm = rightArm;
+	this->leftArm = leftArm;
 }
 
 CommAction::~CommAction() {
@@ -86,15 +87,30 @@ void CommAction::handleCmd(uint8_t *data, size_t size) {
 				this->queueCmd(fbyte, &data[1], size-1);
 			}
 			break;
-		// Arm control
+		// Right Arm control
 		case 2:
 			if (subcmd == 3) { // Is it deployed ?
 				this->sendDataSize = 1;
-				this->sendData[0] = this->elev->isHomed();
+				this->sendData[0] = this->rightArm->isDeployed();
 			} else if (subcmd == 4) { // Get dynamixel head and turn angles
 				this->sendDataSize = 2*sizeof(float);
-				f1 = this->arm->getArmAngle();
-				f2 = this->arm->getTurnAngle();
+				f1 = this->rightArm->getArmAngle();
+				f2 = this->rightArm->getTurnAngle();
+				memcpy(&this->sendData[0], &f1, sizeof(float));
+				memcpy(&this->sendData[0+4], &f2, sizeof(float));
+			} else {
+				this->queueCmd(fbyte, &data[1], size-1);
+			}
+			break;
+		// Left Arm control
+		case 3:
+			if (subcmd == 3) { // Is it deployed ?
+				this->sendDataSize = 1;
+				this->sendData[0] = this->leftArm->isDeployed();
+			} else if (subcmd == 4) { // Get dynamixel head and turn angles
+				this->sendDataSize = 2*sizeof(float);
+				f1 = this->leftArm->getArmAngle();
+				f2 = this->leftArm->getTurnAngle();
 				memcpy(&this->sendData[0], &f1, sizeof(float));
 				memcpy(&this->sendData[0+4], &f2, sizeof(float));
 			} else {

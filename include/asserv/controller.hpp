@@ -28,13 +28,15 @@ enum ControllerState
 class Controller
 {
 public:
-	Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance);
+	Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance, float amaxDstEstop, float amaxAngleEstop);
 	~Controller();
 
 	float getDstTarget();
 	float getAngleTarget();
 
 	void work(float dt);
+
+	void estop();
 
 	bool isReady();
 	ControllerState getState();
@@ -50,6 +52,8 @@ public:
 private:
 	float dstTolerance;
 	float angleTolerance;
+	float amaxDstEstop;
+	float amaxAngleEstop;
 
 	Target oldTarget;
 	Target target;

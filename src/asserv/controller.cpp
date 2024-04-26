@@ -1,12 +1,14 @@
 #include <math.h>
 #include <asserv/controller.hpp>
 
-Controller::Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance) {
+Controller::Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance, float amaxDstEstop, float amaxAngleEstop) {
 	this->odo = odo;
 	this->spDst = spDst;
 	this->spAngle = spAngle;
 	this->dstTolerance = dstTolerance;
 	this->angleTolerance = angleTolerance;
+	this->amaxDstEstop = amaxDstEstop;
+	this->amaxAngleEstop = amaxAngleEstop;
 	this->reset();
 }
 
@@ -49,6 +51,11 @@ ControllerState Controller::getState() {
 	return this->state;
 }
 
+void Controller::estop() {
+	this->spDst->stop(this->amaxDstEstop);
+	this->spAngle->stop(this->amaxAngleEstop);
+}
+
 void Controller::work(float dt) {
 	if (this->state == ControllerState::reachedTarget)
 		return;
@@ -58,6 +65,9 @@ void Controller::work(float dt) {
 
 		if (!this->spAngle->isDone() && abs(this->target.theta-this->odo->theta) > this->angleTolerance)
 			return;
+
+		// In case of emergency stop, change the current target to the new target
+		this->target.theta = this->oldTarget.theta + this->spAngle->getPosition();
 		
 		this->state = ControllerState::reachingDst;
 	}
@@ -67,6 +77,9 @@ void Controller::work(float dt) {
 
 		if (!this->spDst->isDone() && abs(this->target.dst-this->odo->dst) > this->dstTolerance)
 			return;
+
+		// In case of emergency stop, change the current target to the new target
+		this->target.dst = this->oldTarget.dst + this->spDst->getPosition();
 
 		this->state = ControllerState::reachedTarget;
 	}

@@ -24,10 +24,11 @@
 void comm_thread() {
 	// Grab the refs from the other core
 	Elevator *elev = (Elevator*)multicore_fifo_pop_blocking();
-	Arm *arm = (Arm*)multicore_fifo_pop_blocking();
+	Arm *rightArm = (Arm*)multicore_fifo_pop_blocking();
+	Arm *leftArm = (Arm*)multicore_fifo_pop_blocking();
 
 	// Init HL Comms on other core to handle interrupts there
-	CommAction *hlComm = new CommAction(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_INSTANCE, elev, arm);
+	CommAction *hlComm = new CommAction(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_INSTANCE, elev, rightArm, leftArm);
 
 	multicore_fifo_push_blocking((uint32_t)hlComm);
 
@@ -48,30 +49,37 @@ int main() {
 
 	DynamixelManager *dynMan = new DynamixelManager(uart0, DYN_UART_TX, DYN_UART_RX, DYN_BAUDRATE, DYN_PROTO_VER);
 
-	DynamixelXL430 *armDeploy = new DynamixelXL430(ARM_DEPLOY_DYN_ID);
-	DynamixelXL430 *armTurn = new DynamixelXL430(ARM_TURN_DYN_ID);
+	DynamixelXL430 *rightArmDeploy = new DynamixelXL430(RIGHT_ARM_DEPLOY_DYN_ID);
+	DynamixelXL430 *rightArmTurn = new DynamixelXL430(RIGHT_ARM_TURN_DYN_ID);
+
+	DynamixelXL430 *leftArmDeploy = new DynamixelXL430(LEFT_ARM_DEPLOY_DYN_ID);
+	DynamixelXL430 *leftArmTurn = new DynamixelXL430(LEFT_ARM_TURN_DYN_ID);
 
 	Pump *pump = new Pump(PUMP0_PIN);
 	Pump *pump_sol = new Pump(PUMP0_SOLENOID_PIN);
 	
-	armDeploy->bind(dynMan);
-	armTurn->bind(dynMan);
+	rightArmDeploy->bind(dynMan);
+	rightArmTurn->bind(dynMan);
+	leftArmDeploy->bind(dynMan);
+	leftArmTurn->bind(dynMan);
 
-	uint16_t modelNum;
+	/*uint16_t modelNum;
 
-	armDeploy->ping(&modelNum);
-	printf("[%i] ping %i\n", armDeploy->id, modelNum);
+	rightArmDeploy->ping(&modelNum);
+	printf("[%i] ping %i\n", rightArmDeploy->id, modelNum);
 
-	armTurn->ping(&modelNum);
-	printf("[%i] ping %i\n", armTurn->id, modelNum);
+	rightArmTurn->ping(&modelNum);
+	printf("[%i] ping %i\n", rightArmTurn->id, modelNum);*/
 
-	Arm *arm = new Arm(armDeploy, armTurn, ARM_DEPLOYED_ANGLE, ARM_FOLDED_ANGLE);
+	Arm *rightArm = new Arm(rightArmDeploy, rightArmTurn, RIGHT_ARM_DEPLOYED_ANGLE, RIGHT_ARM_FOLDED_ANGLE);
+	Arm *leftArm = new Arm(leftArmDeploy, leftArmTurn, LEFT_ARM_DEPLOYED_ANGLE, LEFT_ARM_FOLDED_ANGLE);
 
 	multicore_launch_core1(comm_thread);
 
 	// Send the refs over to the other core
 	multicore_fifo_push_blocking((uint32_t)elev);
-	multicore_fifo_push_blocking((uint32_t)arm);
+	multicore_fifo_push_blocking((uint32_t)rightArm);
+	multicore_fifo_push_blocking((uint32_t)leftArm);
 	// Grab the comm ref
 	CommAction *hlComm = (CommAction*)multicore_fifo_pop_blocking();
 
@@ -90,10 +98,12 @@ int main() {
 			case 0:
 				if (hlComm->getArgumentU8(0)) {
 					elev->setEnable(true);
-					arm->setEnable(true);
+					rightArm->setEnable(true);
+					leftArm->setEnable(true);
 				} else {
 					elev->setEnable(false);
-					arm->setEnable(false);
+					rightArm->setEnable(false);
+					leftArm->setEnable(false);
 					pump->disable();
 				}
 				break;
@@ -106,17 +116,26 @@ int main() {
 				else if (subcmd == 2) // Relative
 					elev->move(hlComm->getArgumentFloat(0));
 				break;
-			// Arm control
+			// Right Arm control
 			case 2: 
 				if (subcmd == 0) // Deploy
-					arm->deploy();
+					rightArm->deploy();
 				else if (subcmd == 1) // Fold up
-					arm->fold();
+					rightArm->fold();
 				else if (subcmd == 2) // Turn head
-					arm->turn(hlComm->getArgumentFloat(0));
+					rightArm->turn(hlComm->getArgumentFloat(0));
 				break;
-			// Pump control
-			case 3:
+			// Left Arm control
+			case 3: 
+				if (subcmd == 0) // Deploy
+					leftArm->deploy();
+				else if (subcmd == 1) // Fold up
+					leftArm->fold();
+				else if (subcmd == 2) // Turn head
+					leftArm->turn(hlComm->getArgumentFloat(0));
+				break;
+			// Left Pump control
+			case 4:
 				if (subcmd == 0) // Pump 1
 					pump->setEnable(hlComm->getArgumentU8(0) == 1);
 				else if (subcmd == 1) // Pump 2

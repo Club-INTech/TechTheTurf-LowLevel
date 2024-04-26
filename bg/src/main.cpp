@@ -13,6 +13,8 @@
 //#define ALIGN_SENSOR
 #define USE_PRECALIB
 //#define ENABLE_DEBUG
+//#define USE_TORQUE_FOC_CURRENT
+#define MAX_CURRENT 10
 
 // Motor definitions
 
@@ -115,22 +117,26 @@ void setup() {
 	// set motion control loop to be used
 	motor.controller = MotionControlType::velocity;
 
+#ifdef USE_TORQUE_FOC_CURRENT
 	motor.torque_controller = TorqueControlType::foc_current;
+	motor.current_limit = MAX_CURRENT;
+#endif
 
 	// contoller configuration 
 	// default parameters in defaults.h
 
-	// velocity PI controller parameters
-	motor.PID_velocity.P = 0.2;
-	motor.PID_velocity.I = 0.0;
 	// default voltage_power_supply
 	motor.voltage_limit = VOLTAGE_SUPPLY;
+
+	// velocity PI controller parameters
+	motor.PID_velocity.P = 0.2;
+	motor.PID_velocity.I = 2.5;
+	motor.PID_velocity.D = 0.001;
+	// velocity low pass filtering time constant
+	motor.LPF_velocity.Tf = 0.05;
 	// jerk control using voltage voltage ramp
 	// default value is 300 volts per sec  ~ 0.3V per millisecond
 	motor.PID_velocity.output_ramp = 1000;
- 
-	// velocity low pass filtering time constant
-	motor.LPF_velocity.Tf = 0.01;
 
 	// angle P controller
 	motor.P_angle.P = 20;

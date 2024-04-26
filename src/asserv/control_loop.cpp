@@ -87,7 +87,7 @@ void ControlLoop::estop() {
 	if (!this->running)
 		return;
 	mutex_try_enter(&this->mutex, nullptr);
-	this->ctrl->reset(this->odo->dst, this->odo->theta);
+	this->ctrl->estop();
 	mutex_exit(&this->mutex);
 }
 

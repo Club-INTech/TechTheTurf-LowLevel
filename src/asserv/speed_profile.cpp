@@ -56,6 +56,16 @@ void SpeedProfile::initMove(float distance) {
 	}
 }
 
+void SpeedProfile::stop(float acceleration) {
+	acceleration = std::abs(acceleration);
+	if (acceleration == 0)
+		acceleration = this->amax;
+
+	this->time = 0;
+	this->stopVel = this->velocity;
+	this->stopAmax = acceleration;
+}
+
 float SpeedProfile::getTotalTime() {
 	float time = this->ta*2;
 	if (this->trap)
@@ -78,27 +88,39 @@ float SpeedProfile::process(float dt) {
 	this->time += dt;
 	this->velocity = 0;
 
-	if (this->time < this->ta) {
-		this->velocity = this->time * this->amax;
-	} else if (this->trap)  {
-		if (this->time < this->ta+this->tc) {
-			this->velocity = this->vmax;
-		} else if (this->time < 2*this->ta+this->tc) {
-			this->velocity = this->vmax - (this->time-(this->ta+this->tc)) * this->amax;
+	// Stop
+	if (this->stopAmax != 0) {
+		this->velocity = std::max(this->stopVel - this->time*this->stopAmax, 0.0f);
+	} else { // Normal operation
+		if (this->time < this->ta) {
+			this->velocity = this->time * this->amax;
+		} else if (this->trap)  {
+			if (this->time < this->ta+this->tc) {
+				this->velocity = this->vmax;
+			} else if (this->time < 2*this->ta+this->tc) {
+				this->velocity = this->vmax - (this->time-(this->ta+this->tc)) * this->amax;
+			} else {
+				this->done = true;
+				return this->target;
+			}
 		} else {
-			this->done = true;
-			return this->target;
-		}
-	} else {
-		if (this->time < 2*this->ta) {
-			this->velocity = this->vmaxTrig - (this->time-this->ta) * this->amax;
-		} else {
-			this->done = true;
-			return this->target;
+			if (this->time < 2*this->ta) {
+				this->velocity = this->vmaxTrig - (this->time-this->ta) * this->amax;
+			} else {
+				this->done = true;
+				return this->target;
+			}
 		}
 	}
 	
 	this->position += this->direction * this->velocity*dt;
+
+	// If we need to stop and we're not moving anymore, change target & finish.
+	if (this->stopAmax != 0 && this->velocity == 0.0f) {
+		this->target = this->position;
+		this->done = true;
+		return this->target;
+	}
 
 	// This method of integrating will bring about some errors
 	// So if we overshot the position but the time is not up yet
@@ -124,6 +146,8 @@ void SpeedProfile::reset() {
 	this->vmaxTrig = 0;
 	this->ta = 0;
 	this->tc = 0;
+	this->stopAmax = 0;
+	this->stopVel = 0;
 	this->target = 0;
 	this->trap = false;
 }

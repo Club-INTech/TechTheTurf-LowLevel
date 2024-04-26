@@ -7,7 +7,7 @@
 class CommAction : public Comm
 {
 public:
-	CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Elevator *elev, Arm *arm);
+	CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Elevator *elev, Arm *rightArm, Arm *leftArm);
 	~CommAction();
 	
 	void handleCmd(uint8_t *data, size_t size);
@@ -26,7 +26,8 @@ private:
 	void queueCmd(uint8_t fbyte, uint8_t *data, size_t size);
 
 	Elevator *elev;
-	Arm *arm;
+	Arm *rightArm;
+	Arm *leftArm;
 
 	int cmd;
 	uint8_t args[4*2]; // Max 2 floats

@@ -97,8 +97,10 @@ int main() {
 	SpeedProfile *speedProfileAngle = new SpeedProfile(MAX_TURN_VELOCITY, MAX_TURN_ACCEL);
 
 	// Setup the controller
-	Controller *ctrl = new Controller(odo, speedProfileDst, speedProfileAngle, TOLERANCE_DST, TOLERANCE_ANGLE);
+	Controller *ctrl = new Controller(odo, speedProfileDst, speedProfileAngle, TOLERANCE_DST, TOLERANCE_ANGLE,
+									MAX_LIN_ESTOP_ACCEL, MAX_TURN_ESTOP_ACCEL);
 
+	// Finally setup the control loop, what will actually do all the processing
 	ControlLoop *cl = new ControlLoop(lEnc, rEnc, lDrv, rDrv, odo,
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lSpeedAlim, rSpeedAlim,
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);

@@ -29,6 +29,8 @@ public:
 
 	// Starts a move 
 	void initMove(float distance);
+	// Decelerates to a stop, if the acceleration is zero, the default maximum acceleration is used
+	void stop(float acceleration = 0);
 	// Applies the profile and returns the current position
 	float process(float dt);
 	// Returns the total time time taken to do the profile
@@ -58,6 +60,11 @@ private:
 	// ta is the accel and decel time
 	// tc is the time spent at constant velocity (if on a trap. profile)
 	float ta, tc;
+	// The deceleration value at which to stop, if non-zero then initiate deceleration
+	float stopAmax;
+	// The initial velocity at which the stop was initiated
+	float stopVel;
+
 	float target;
 
 	float vmax, amax;
