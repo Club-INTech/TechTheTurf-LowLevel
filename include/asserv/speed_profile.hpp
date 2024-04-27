@@ -29,6 +29,8 @@ public:
 
 	// Starts a move 
 	void initMove(float distance);
+	// Are we stopping using the stop function, so not the normal decell ?
+	bool isStopping();
 	// Decelerates to a stop, if the acceleration is zero, the default maximum acceleration is used
 	void stop(float acceleration = 0);
 	// Applies the profile and returns the current position

@@ -63,7 +63,7 @@ void Controller::work(float dt) {
 	if (this->state == ControllerState::reachingTheta) {
 		this->spAngle->process(dt);
 
-		if (!this->spAngle->isDone() && abs(this->target.theta-this->odo->theta) > this->angleTolerance)
+		if (!this->spAngle->isDone() || abs(this->target.theta-this->odo->theta) > this->angleTolerance)
 			return;
 
 		// In case of emergency stop, change the current target to the new target
@@ -75,7 +75,7 @@ void Controller::work(float dt) {
 	if (this->state == ControllerState::reachingDst) {
 		this->spDst->process(dt);
 
-		if (!this->spDst->isDone() && abs(this->target.dst-this->odo->dst) > this->dstTolerance)
+		if (!this->spDst->isDone() || abs(this->target.dst-this->odo->dst) > this->dstTolerance)
 			return;
 
 		// In case of emergency stop, change the current target to the new target

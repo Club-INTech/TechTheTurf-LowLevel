@@ -66,6 +66,10 @@ void SpeedProfile::stop(float acceleration) {
 	this->stopAmax = acceleration;
 }
 
+bool SpeedProfile::isStopping() {
+	return this->stopAmax != 0;
+}
+
 float SpeedProfile::getTotalTime() {
 	float time = this->ta*2;
 	if (this->trap)
