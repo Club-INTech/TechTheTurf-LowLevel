@@ -12,9 +12,9 @@ public:
 	void setPwm(float duty);
 	void setEnable(bool enabled);
 
+	CommBG *bg;
 private:
 	bool reversed;
 
-	CommBG *bg;
 	bool status;
 };

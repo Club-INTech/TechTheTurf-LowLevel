@@ -67,7 +67,7 @@ LowsideCurrentSense currentSense = LowsideCurrentSense(0.003f, -64.0f/7.0f, A_OP
 HallSensor encoder = HallSensor(A_HALL1, A_HALL2, A_HALL3, MOTOR_PAIRS);
 
 // Comm instance
-CommBG comm = CommBG(COMM_UID, COMM_SERIAL, A_USART2_RX, A_USART2_TX, motor);
+CommBG comm = CommBG(COMM_UID, COMM_SERIAL, A_USART2_RX, A_USART2_TX, motor, currentSense);
 
 // interrupt routine initialization
 void doA(){encoder.handleA();}

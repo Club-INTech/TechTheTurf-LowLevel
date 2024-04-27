@@ -1,6 +1,10 @@
 #include <asserv/comm_asserv.hpp>
 #include <asserv/pid.hpp>
 
+#if defined(ROBOT_MAIN) && !defined(ROBOT_MAIN_ODRIVE)
+#include <asserv/driver_bg.hpp>
+#endif
+
 static inline PID *getPid(ControlLoop *cl, uint8_t idx) {
 	switch (idx) {
 		case 0:
@@ -35,7 +39,7 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 	//printf("cmd: %i, subcmd:%i\n", cmd, subcmd);
 
 	// Floats need to be aligned, can't just cast
-	float f1, f2, f3;
+	float f1, f2, f3, f4;
 	int32_t is1, is2;
 	TelemetryBase* telem;
 	PID *pid;
@@ -156,6 +160,23 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				this->sendDataSize = 1;
 				this->sendData[0] = this->cl->ctrl->getState();
 			}
+#if defined(ROBOT_MAIN) && !defined(ROBOT_MAIN_ODRIVE)
+			else if (subcmd == 5) { // Get left BG stats
+				((DriverBG*)this->cl->drvLeft)->bg->readStats(&f1, &f2, &f3, &f4);
+				memcpy(&this->sendData[0], &f1, sizeof(float));
+				memcpy(&this->sendData[4], &f2, sizeof(float));
+				memcpy(&this->sendData[4*2], &f3, sizeof(float));
+				memcpy(&this->sendData[4*3], &f4, sizeof(float));
+				this->sendDataSize = 4*sizeof(float);
+			} else if (subcmd == 6) { // Get right BG stats
+				((DriverBG*)this->cl->drvRight)->bg->readStats(&f1, &f2, &f3, &f4);
+				memcpy(&this->sendData[0], &f1, sizeof(float));
+				memcpy(&this->sendData[4], &f2, sizeof(float));
+				memcpy(&this->sendData[4*2], &f3, sizeof(float));
+				memcpy(&this->sendData[4*3], &f4, sizeof(float));
+				this->sendDataSize = 4*sizeof(float);
+			}
+#endif
 			break;
 		default:
 			break;

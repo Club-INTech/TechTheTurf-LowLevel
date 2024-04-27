@@ -1,11 +1,12 @@
 #include "comm_bg.hpp"
 
-CommBG::CommBG(uint8_t uid, HardwareSerial &ser, uint8_t rx, uint8_t tx, FOCMotor &mot) {
+CommBG::CommBG(uint8_t uid, HardwareSerial &ser, uint8_t rx, uint8_t tx, FOCMotor &mot, LowsideCurrentSense &currSense) {
 	this->uid = uid;
 	this->ser = &ser;
 	this->mot = &mot;
 	this->rx = rx;
 	this->tx = tx;
+	this->currSense = &currSense;
 }
 
 CommBG::~CommBG() {
@@ -14,17 +15,14 @@ CommBG::~CommBG() {
 
 void CommBG::begin() {
 	this->stopTx();
-	pinMode(A_TEMPERATURE, INPUT);
-	pinMode(A_VBUS, INPUT);
-	analogReadResolution(12);
 }
 
 void CommBG::startTx() {
-	pinMode(this->tx, OUTPUT);
+	pin_function(digitalPinToPinName(this->tx), STM_PIN_DATA(STM_MODE_AF_PP, GPIO_PULLUP, GPIO_AF7_USART2));
 }
 
 void CommBG::stopTx() {
-	pinMode(this->tx, INPUT);
+	pin_function(digitalPinToPinName(this->tx), STM_PIN_DATA(STM_MODE_INPUT, GPIO_NOPULL, 0));
 }
 
 void CommBG::sendCmd(uint8_t cmd) {
@@ -32,6 +30,22 @@ void CommBG::sendCmd(uint8_t cmd) {
 	this->ser->write((uint8_t*)&val, 2);
 	this->ser->write(this->uid);
 	this->ser->write(cmd);
+}
+
+// V -> Celsius
+static float Ntc2TempV(float ADCVoltage)
+{
+	// Formula: https://www.giangrandi.org/electronics/ntc/ntc.shtml
+	const float ResistorBalance = 4700.0;
+	const float Beta  = 3425.0F;
+	const float RoomTempI = 1.0F/298.15F; //[K]
+	const float Rt = ResistorBalance * ((3.3F / ADCVoltage)-1);
+	const float R25 = 10000.0F;
+
+	float T = 1.0F/((log(Rt/R25)/Beta)+RoomTempI);
+	T = T - 273.15;
+
+	return T;
 }
 
 void CommBG::work() {
@@ -44,14 +58,13 @@ void CommBG::work() {
 		by = this->ser->read();
 		if (by != this->uid)
 			continue;
-		this->ser->print("UID: ");
-		this->ser->println(by);
+		//this->ser->print("UID: ");
+		//this->ser->println(by);
 
 		by = this->ser->read();
-		this->ser->print("CMD: ");
-		this->ser->println(by);
+		//this->ser->print("CMD: ");
+		//this->ser->println(by);
 		float tmpf;
-		uint32_t tmpi;
 		switch (by) { // CMD
 			case 0x0: // Disable
 				this->mot->disable();
@@ -74,11 +87,13 @@ void CommBG::work() {
 				this->startTx();
 				this->sendCmd(0x84);
 				tmpf = this->mot->shaftVelocity();
-				tmpi = analogRead(A_TEMPERATURE);
 				this->ser->write((uint8_t*)&tmpf, sizeof(float));
-				this->ser->write((uint8_t*)&tmpi, sizeof(uint32_t));
-				tmpi = analogRead(A_VBUS);
-				this->ser->write((uint8_t*)&tmpi, sizeof(uint32_t));
+				tmpf = this->currSense->getDCCurrent(this->mot->electrical_angle);
+				this->ser->write((uint8_t*)&tmpf, sizeof(float));
+				tmpf =  Ntc2TempV(_readADCVoltageInline(A_TEMPERATURE, this->currSense->params));
+				this->ser->write((uint8_t*)&tmpf, sizeof(float));
+				tmpf = _readADCVoltageInline(A_VBUS, this->currSense->params) * ((18.0f+169.0f)/18.0f);
+				this->ser->write((uint8_t*)&tmpf, sizeof(float));
 				break;
 			case 0x7F: // Stop TX
 				this->stopTx();

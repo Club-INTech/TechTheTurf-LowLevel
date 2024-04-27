@@ -9,7 +9,7 @@
 class CommBG
 {
 public:
-	CommBG(uint8_t uid, HardwareSerial &ser, uint8_t rx, uint8_t tx, FOCMotor &mot);
+	CommBG(uint8_t uid, HardwareSerial &ser, uint8_t rx, uint8_t tx, FOCMotor &mot, LowsideCurrentSense &currSense);
 	~CommBG();
 
 	void begin();
@@ -29,4 +29,5 @@ private:
 	HardwareSerial *ser;
 	uint8_t rx, tx;
 	FOCMotor *mot;
+	LowsideCurrentSense *currSense;
 };
