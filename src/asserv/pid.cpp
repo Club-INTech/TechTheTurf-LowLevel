@@ -53,7 +53,7 @@ float PID::clampVal(float val) {
 // From: https://gist.github.com/bradley219/5373998
 float PID::calculate(float desired, float current, float dt) {
 	if (this->passthrough)
-		return clampVal(desired);
+		return clampVal(desired)*this->Kp;
 
 	// Calculate error
 	float error = desired - current;

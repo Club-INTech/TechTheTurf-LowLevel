@@ -37,11 +37,13 @@ void CommBG::sendCmd(uint8_t cmd) {
 void CommBG::enable() {
 	mutex_try_enter(&this->mutex, nullptr);
 	this->sendCmd(0x1);
+	this->sendCmd(0x1);
 	mutex_exit(&this->mutex);
 }
 
 void CommBG::disable() {
 	mutex_try_enter(&this->mutex, nullptr);
+	this->sendCmd(0x0);
 	this->sendCmd(0x0);
 	mutex_exit(&this->mutex);
 }

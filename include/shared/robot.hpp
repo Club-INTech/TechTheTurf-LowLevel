@@ -27,7 +27,7 @@
 	// mm/s
 	#define MAX_LIN_VELOCITY 600.0f
 	// mm/s^2
-	#define MAX_LIN_ACCEL 1000.0f
+	#define MAX_LIN_ACCEL 600.0f
 	// mm/s^2
 	#define MAX_LIN_ESTOP_ACCEL 2000.0f
 	// rad/s
@@ -39,9 +39,9 @@
 
 	// Tolerances for the controller
 	// mm
-	#define TOLERANCE_DST 5.0f
+	#define TOLERANCE_DST 20.0f
 	// rad
-	#define TOLERANCE_ANGLE (1.0f*(M_PI/180.0f))
+	#define TOLERANCE_ANGLE (4.0f*(M_PI/180.0f))
 
 	// PIDs
 	#ifdef PAMINABLE
@@ -57,8 +57,8 @@
 		#define DST_PID_CLAMP 3000.0f
 
 		// Angle PID
-		#define ANGLE_PID_KP 4000.0f
-		#define ANGLE_PID_KI 70.0f
+		#define ANGLE_PID_KP 4500.0f
+		#define ANGLE_PID_KI 120.0f
 		#define ANGLE_PID_KD 80.0f
 		#define ANGLE_PID_CLAMP 100000.0f
 	#else
@@ -229,9 +229,9 @@
 	#define DYN_PROTO_VER 2.0
 
 	#define LEFT_ARM_DEPLOY_DYN_ID 16
-	#define LEFT_ARM_TURN_DYN_ID 15
+	#define LEFT_ARM_TURN_DYN_ID 11
 	#define RIGHT_ARM_DEPLOY_DYN_ID 10
-	#define RIGHT_ARM_TURN_DYN_ID 11
+	#define RIGHT_ARM_TURN_DYN_ID 15
 
 	// Stepper for elevator
 	#define ELEVATOR_STEPS_PER_ROT 200
@@ -262,10 +262,10 @@
 	#define ELEVATOR_REVERSE true
 
 	// Solar pannel arm angles
-	#define LEFT_ARM_DEPLOYED_ANGLE 170.0
-	#define LEFT_ARM_FOLDED_ANGLE 288.0
-	#define RIGHT_ARM_DEPLOYED_ANGLE 185.75
-	#define RIGHT_ARM_FOLDED_ANGLE 75.9
+	#define LEFT_ARM_DEPLOYED_ANGLE 84.0
+	#define LEFT_ARM_FOLDED_ANGLE 200.0
+	#define RIGHT_ARM_DEPLOYED_ANGLE 187.0
+	#define RIGHT_ARM_FOLDED_ANGLE 75.0
 
 #endif
 

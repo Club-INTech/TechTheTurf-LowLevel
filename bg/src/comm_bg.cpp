@@ -1,6 +1,6 @@
 #include "comm_bg.hpp"
 
-CommBG::CommBG(uint8_t uid, HardwareSerial &ser, uint8_t rx, uint8_t tx, FOCMotor &mot, LowsideCurrentSense &currSense) {
+CommBG::CommBG(uint8_t uid, HardwareSerial &ser, uint8_t rx, uint8_t tx, BLDCMotor &mot, LowsideCurrentSense &currSense) {
 	this->uid = uid;
 	this->ser = &ser;
 	this->mot = &mot;
@@ -48,6 +48,14 @@ static float Ntc2TempV(float ADCVoltage)
 	return T;
 }
 
+float CommBG::getPower() {
+	PhaseCurrent_s current = this->currSense->getPhaseCurrents();
+	ABCurrent_s ABcurrent = this->currSense->getABCurrents(current);
+	float apow = ABcurrent.alpha * this->mot->Ualpha;
+	float bpow = ABcurrent.beta * this->mot->Ubeta;
+	return _sqrt(apow*apow + bpow*bpow);
+}
+
 void CommBG::work() {
 	while (this->ser->available() >= 3) {
 		uint8_t by = this->ser->read();
@@ -88,7 +96,7 @@ void CommBG::work() {
 				this->sendCmd(0x84);
 				tmpf = this->mot->shaftVelocity();
 				this->ser->write((uint8_t*)&tmpf, sizeof(float));
-				tmpf = this->currSense->getDCCurrent(this->mot->electrical_angle);
+				tmpf = this->currSense->getDCCurrent();//this->getPower();
 				this->ser->write((uint8_t*)&tmpf, sizeof(float));
 				tmpf =  Ntc2TempV(_readADCVoltageInline(A_TEMPERATURE, this->currSense->params));
 				this->ser->write((uint8_t*)&tmpf, sizeof(float));
