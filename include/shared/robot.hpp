@@ -269,4 +269,33 @@
 
 #endif
 
+#ifdef ROBOT_PAMI
+#ifdef PAMIGAMI
+	// UART Dynamixel
+	#define DYN_UART_INSTANCE uart0
+	#define DYN_BAUDRATE 57600
+	#define DYN_PROTO_VER 2.0
+
+	#define LEFT_WHEEL_DYN_ID 3
+	#define RIGHT_WHEEL_DYN_ID 4
+	#define ARM_DYN_ID 5
+
+	// Pins
+	#define DYN_UART_TX 16
+	#define DYN_UART_RX 17
+
+	#define JUMPER_PIN 2
+	#define SIDE_PIN 18
+
+	// Mech constants
+	#define ARM_STANDBY_ANGLE 180.0f
+	#define ARM_YELLOW_ANGLE 90.0f
+	#define ARM_BLUE_ANGLE 270.0f
+
+	#define WHEEL_RADIUS (54.0f/2.0f)
+	#define DISTANCE_TO_RUN (110.0f+125.0f+325.0f/2.0f)
+	#define ANGLES_TO_RUN (DISTANCE_TO_RUN/(2*M_PI*WHEEL_RADIUS))*360.0f
+#endif
+#endif
+
 #endif

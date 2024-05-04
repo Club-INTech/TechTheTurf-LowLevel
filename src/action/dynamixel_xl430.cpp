@@ -115,6 +115,16 @@ int DynamixelXL430::setVelocity(float velRpm) {
 	return this->setVelocityRaw(velVal);
 }
 
+int DynamixelXL430::setProfileAcceleration(float maxAccel) {
+	uint32_t accelVal = maxAccel / XL430_RPMSQ_PER_TICK;
+	return this->write4(108, accelVal);
+}
+
+int DynamixelXL430::setProfileVelocity(float maxVel) {
+	uint32_t velVal = maxVel / XL430_RPM_PER_TICK;
+	return this->write4(112, velVal);
+}
+
 int DynamixelXL430::initMotor() {
 	if (this->reboot() != 0)
 		return -1;

@@ -15,6 +15,8 @@
 #define XL430_MAX_PWM 885
 #define XL430_PERCENT_PER_TICK (1.0/XL430_MAX_PWM)
 
+#define XL430_RPMSQ_PER_TICK 214.577f
+
 enum XL430OperatingMode { 
 	velocity = 1,
 	position = 3,
@@ -57,6 +59,12 @@ public:
 	int setPwmRel(float pwm);
 	// [-1, 1]
 	int setVelocityRel(float vel);
+
+	// Speed Profile for position move
+	// [0, 7031044559] in rpm²
+	int setProfileAcceleration(float maxAccel);
+	// [0, 7503] in rpm
+	int setProfileVelocity(float maxVel);
 
 	// Asks motor if it is moving
 	bool isMoving();

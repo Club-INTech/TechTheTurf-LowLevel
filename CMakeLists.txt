@@ -109,6 +109,13 @@ target_sources(ll_action_main INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/action/
 target_compile_definitions(ll_action_main INTERFACE ROBOT_MAIN)
 target_link_libraries(ll_action_main INTERFACE ll_common dynamixel_sdk)
 
+# Pamigami
+add_library(ll_pamigami INTERFACE)
+target_sources(ll_pamigami INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_manager.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_motor.cpp"
+                                     "${CMAKE_CURRENT_SOURCE_DIR}/src/action/dynamixel_xl430.cpp")
+target_compile_definitions(ll_pamigami INTERFACE ROBOT_PAMI PAMIGAMI)
+target_link_libraries(ll_pamigami INTERFACE ll_common dynamixel_sdk)
+
 # Create executables from interface libs
 
 add_executable(paminable "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp")
@@ -150,3 +157,13 @@ pico_enable_stdio_uart(main_action 0)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(main_action)
+
+add_executable(pamigami "${CMAKE_CURRENT_SOURCE_DIR}/src/action/pamigami.cpp")
+target_link_libraries(pamigami PUBLIC ll_pamigami)
+
+# Common to all projects
+pico_enable_stdio_usb(pamigami 1)
+pico_enable_stdio_uart(pamigami 0)
+
+# create map/bin/hex file etc.
+pico_add_extra_outputs(pamigami)
