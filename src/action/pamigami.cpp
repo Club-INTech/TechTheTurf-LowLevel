@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <pico/multicore.h>
 #include <pico/stdlib.h>
 #include <math.h>
 
 #include <action/dynamixel_manager.hpp>
 #include <action/dynamixel_xl430.hpp>
+#include <action/hcsr04.hpp>
 
 #include <shared/robot.hpp>
 
@@ -17,6 +19,30 @@ static inline bool getSide() {
 	return !gpio_get(SIDE_PIN);
 }
 
+void range_thread() {
+	// Grab the refs from the other core
+	HCSR04 *hc = new HCSR04(HCSR04_TRIG, HCSR04_ECHO);
+	DynamixelXL430 *leftWheel = (DynamixelXL430*)multicore_fifo_pop_blocking();
+	DynamixelXL430 *rightWheel = (DynamixelXL430*)multicore_fifo_pop_blocking();
+	DynamixelXL430 *arm = (DynamixelXL430*)multicore_fifo_pop_blocking();
+
+	// Wait for start
+	multicore_fifo_pop_blocking();
+
+	while (true) {
+		float dst = hc->getDistance();
+		printf("%f\n", dst);
+		if (dst <= ESTOP_DIST) {
+			for (;;) {
+				leftWheel->setTorque(false);
+				rightWheel->setTorque(false);
+				arm->setTorque(false);
+				busy_wait_us(10000);
+			}
+		}
+
+	}
+}
 int main() {
 	// Init PicoSDK
 	stdio_init_all();
@@ -24,8 +50,8 @@ int main() {
 	// Init jumper & side pin
 	gpio_init(JUMPER_PIN);
 	gpio_init(SIDE_PIN);
-    gpio_set_dir(JUMPER_PIN, GPIO_IN);
-    gpio_set_dir(SIDE_PIN, GPIO_IN);
+	gpio_set_dir(JUMPER_PIN, GPIO_IN);
+	gpio_set_dir(SIDE_PIN, GPIO_IN);
 	gpio_pull_up(JUMPER_PIN);
 	gpio_pull_up(SIDE_PIN);
 
@@ -46,8 +72,8 @@ int main() {
 
 	leftWheel->setProfileVelocity(55.0f);
 	rightWheel->setProfileVelocity(56.0f);
-	leftWheel->setProfileAcceleration(4292);
-	rightWheel->setProfileAcceleration(4292);
+	leftWheel->setProfileAcceleration(4292.0f);
+	rightWheel->setProfileAcceleration(4292.0f);
 
 	leftWheel->setTorque(true);
 	rightWheel->setTorque(true);
@@ -57,6 +83,13 @@ int main() {
 	float rightInitial = rightWheel->getPosition();
 
 	arm->setPosition(ARM_STANDBY_ANGLE);
+
+	multicore_launch_core1(range_thread);
+
+	// Send the refs over to the other core
+	multicore_fifo_push_blocking((uint32_t)leftWheel);
+	multicore_fifo_push_blocking((uint32_t)rightWheel);
+	multicore_fifo_push_blocking((uint32_t)arm);
 
 	/*uint16_t modelNum;
 
@@ -75,6 +108,9 @@ int main() {
 	for (;checkJumper(););
 
 	busy_wait_us(91000000);
+
+	// Start
+	//multicore_fifo_push_blocking(1);
 
 	leftWheel->setPosition(leftInitial+ANGLES_TO_RUN);
 	rightWheel->setPosition(rightInitial-ANGLES_TO_RUN);

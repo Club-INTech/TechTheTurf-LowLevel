@@ -25,7 +25,7 @@
 
 	// Trapezoidal profile for distance & angle
 	// mm/s
-	#define MAX_LIN_VELOCITY 600.0f
+	#define MAX_LIN_VELOCITY 300.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 600.0f
 	// mm/s^2
@@ -140,7 +140,7 @@
 
 	// Trapezoidal profile for distance & angle
 	// mm/s
-	#define MAX_LIN_VELOCITY 1000.0f
+	#define MAX_LIN_VELOCITY 500.0f
 	// mm/s^2
 	#define MAX_LIN_ACCEL 1000.0f
 	// mm/s^2
@@ -229,7 +229,7 @@
 	#define DYN_PROTO_VER 2.0
 
 	#define LEFT_ARM_DEPLOY_DYN_ID 16
-	#define LEFT_ARM_TURN_DYN_ID 11
+	#define LEFT_ARM_TURN_DYN_ID 7
 	#define RIGHT_ARM_DEPLOY_DYN_ID 10
 	#define RIGHT_ARM_TURN_DYN_ID 15
 
@@ -287,10 +287,15 @@
 	#define JUMPER_PIN 2
 	#define SIDE_PIN 18
 
+	#define HCSR04_TRIG 10
+	#define HCSR04_ECHO 11
+
 	// Mech constants
 	#define ARM_STANDBY_ANGLE 180.0f
 	#define ARM_YELLOW_ANGLE 90.0f
 	#define ARM_BLUE_ANGLE 270.0f
+
+	#define ESTOP_DIST 100.0f
 
 	#define WHEEL_RADIUS (54.0f/2.0f)
 	#define DISTANCE_TO_RUN (110.0f+125.0f+325.0f/2.0f)

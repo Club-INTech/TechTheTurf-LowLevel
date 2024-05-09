@@ -158,7 +158,7 @@ pico_enable_stdio_uart(main_action 0)
 # create map/bin/hex file etc.
 pico_add_extra_outputs(main_action)
 
-add_executable(pamigami "${CMAKE_CURRENT_SOURCE_DIR}/src/action/pamigami.cpp")
+add_executable(pamigami "${CMAKE_CURRENT_SOURCE_DIR}/src/action/pamigami.cpp" "src/action/hcsr04.cpp")
 target_link_libraries(pamigami PUBLIC ll_pamigami)
 
 # Common to all projects
