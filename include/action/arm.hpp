@@ -7,12 +7,13 @@
 class Arm
 {
 public:
-	Arm(DynamixelXL430 *deploy, DynamixelXL430 *head, float deployAngle, float foldedAngle);
+	Arm(DynamixelXL430 *deploy, DynamixelXL430 *head, float deployAngle, float deployHalfAngle, float foldedAngle);
 	~Arm();
 
 	void setEnable(bool enable);
 
 	void deploy();
+	void halfDeploy();
 	void fold();
 	bool isDeployed();
 	bool isEnabled();
@@ -29,11 +30,13 @@ private:
 
 	bool enabled;
 	bool deployed;
+	bool halfDeployed;
 
 	DynamixelXL430 *xlDeploy;
 	DynamixelXL430 *xlHead;
 
 	float deployAngle;
+	float halfDeployedAngle;
 	float foldedAngle;
 
 };

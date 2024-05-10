@@ -71,8 +71,8 @@ int main() {
 	rightArmTurn->ping(&modelNum);
 	printf("[%i] ping %i\n", rightArmTurn->id, modelNum);*/
 
-	Arm *rightArm = new Arm(rightArmDeploy, rightArmTurn, RIGHT_ARM_DEPLOYED_ANGLE, RIGHT_ARM_FOLDED_ANGLE);
-	Arm *leftArm = new Arm(leftArmDeploy, leftArmTurn, LEFT_ARM_DEPLOYED_ANGLE, LEFT_ARM_FOLDED_ANGLE);
+	Arm *rightArm = new Arm(rightArmDeploy, rightArmTurn, RIGHT_ARM_DEPLOYED_ANGLE, RIGHT_ARM_HALF_DEPLOYED_ANGLE, RIGHT_ARM_FOLDED_ANGLE);
+	Arm *leftArm = new Arm(leftArmDeploy, leftArmTurn, LEFT_ARM_DEPLOYED_ANGLE, LEFT_ARM_HALF_DEPLOYED_ANGLE, LEFT_ARM_FOLDED_ANGLE);
 
 	multicore_launch_core1(comm_thread);
 
@@ -124,6 +124,8 @@ int main() {
 					rightArm->fold();
 				else if (subcmd == 2) // Turn head
 					rightArm->turn(hlComm->getArgumentFloat(0));
+				else if (subcmd == 5)
+					rightArm->halfDeploy();
 				break;
 			// Left Arm control
 			case 3: 
@@ -133,6 +135,8 @@ int main() {
 					leftArm->fold();
 				else if (subcmd == 2) // Turn head
 					leftArm->turn(hlComm->getArgumentFloat(0));
+				else if (subcmd == 5)
+					leftArm->halfDeploy();
 				break;
 			// Left Pump control
 			case 4:

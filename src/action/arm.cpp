@@ -1,10 +1,11 @@
 #include <action/arm.hpp>
 #include <pico/stdlib.h>
 
-Arm::Arm(DynamixelXL430 *deploy, DynamixelXL430 *head, float deployAngle, float foldedAngle) {
+Arm::Arm(DynamixelXL430 *deploy, DynamixelXL430 *head, float deployAngle, float halfDeployedAngle, float foldedAngle) {
 	this->xlDeploy = deploy;
 	this->xlHead = head;
 	this->deployAngle = deployAngle;
+	this->halfDeployedAngle = halfDeployedAngle;
 	this->foldedAngle = foldedAngle;
 	this->setEnable(false);
 }
@@ -29,6 +30,7 @@ void Arm::setEnable(bool enable) {
 		this->xlHead->setTorque(false);
 		this->xlHead->setLED(false);
 		this->deployed = false;
+		this->halfDeployed = false;
 	}
 }
 
@@ -42,11 +44,20 @@ void Arm::deployMoveWait(float angle) {
 		busy_wait_us(5000);
 }
 
+void Arm::halfDeploy() {
+	if (!this->enabled || this->halfDeployed)
+		return;
+	this->deployMoveWait(this->halfDeployedAngle);
+	this->deployed = true;
+	this->halfDeployed = true;
+}
+
 void Arm::deploy() {
-	if (!this->enabled || this->deployed)
+	if (!this->enabled || (this->deployed && !this->halfDeployed))
 		return;
 	this->deployMoveWait(this->deployAngle);
 	this->deployed = true;
+	this->halfDeployed = false;
 }
 
 void Arm::fold() { // We can always fold
@@ -54,6 +65,7 @@ void Arm::fold() { // We can always fold
 		return;
 	this->deployMoveWait(this->foldedAngle);
 	this->deployed = false;
+	this->halfDeployed = false;
 }
 
 bool Arm::isEnabled() {
