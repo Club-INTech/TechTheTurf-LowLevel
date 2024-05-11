@@ -33,16 +33,6 @@ float Controller::getAngleTarget() {
 	return this->target.theta;
 }
 
-/*void Controller::gotoXY(float x, float y) {
-	float dx = x - odo->x;
-	float dy = y - odo->y;
-
-	float deltaTheta = atan2(dy, dx);
-	float deltaDst = sqrt(dx * dx + dy * dy);
-
-	movePolar(deltaDst, deltaTheta);
-}*/
-
 bool Controller::isReady() {
 	return this->state == ControllerState::reachedTarget;
 }
@@ -63,11 +53,16 @@ void Controller::work(float dt) {
 	if (this->state == ControllerState::reachingTheta) {
 		this->spAngle->process(dt);
 
-		if (!this->spAngle->isDone() || abs(this->target.theta-this->odo->theta) > this->angleTolerance)
-			return;
+		if (this->spAngle->isStopping()) {
+			if (!this->spAngle->isDone())
+				return;
 
-		// In case of emergency stop, change the current target to the new target
-		this->target.theta = this->oldTarget.theta + this->spAngle->getPosition();
+			// In case of emergency stop, change the current target to the new target
+			this->target.theta = this->oldTarget.theta + this->spAngle->getPosition();
+		} else {
+			if (!this->spAngle->isDone() || abs(this->target.theta-this->odo->theta) > this->angleTolerance)
+				return;
+		}
 		
 		this->state = ControllerState::reachingDst;
 	}
@@ -75,11 +70,16 @@ void Controller::work(float dt) {
 	if (this->state == ControllerState::reachingDst) {
 		this->spDst->process(dt);
 
-		if (!this->spDst->isDone() || abs(this->target.dst-this->odo->dst) > this->dstTolerance)
-			return;
+		if (this->spDst->isStopping()) {
+			if (!this->spDst->isDone())
+				return;
 
-		// In case of emergency stop, change the current target to the new target
-		this->target.dst = this->oldTarget.dst + this->spDst->getPosition();
+			// In case of emergency stop, change the current target to the new target
+			this->target.dst = this->oldTarget.dst + this->spDst->getPosition();
+		} else {
+			if (!this->spDst->isDone() || abs(this->target.dst-this->odo->dst) > this->dstTolerance)
+				return;
+		}
 
 		this->state = ControllerState::reachedTarget;
 	}
