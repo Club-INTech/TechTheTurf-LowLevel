@@ -6,7 +6,7 @@ This is what is actually running on all the picos.
 
 - `bg/` The PlatformIO project for the B-G431B-ESC1 using SimpleFOC.
 - `src/asserv` The Pico SDK code for the Pico controlling the motors.
-- `src/action` The Pico SDK code for the Pico controlling the actuators.
+- `src/action` The Pico SDK code for the Pico controlling the actuators & the PAMIGAMI.
 - `src/dynamixel_sdk` The Dynamixel SDK with a Pico SDK Port Handler implemented.
 - `src/shared` Code shared across the motors and acuators controllers.
 - `include/` Headers arranged in the same fashion as the `src/` folder
@@ -23,6 +23,7 @@ This is what is actually running on all the picos.
 	- `main_action` for the main robot's actuators controller pico.
 	- `paminable` for the PAMInable pico.
 	- `pamiserable` for the PAMIsérable pico.
+	- `pamigami` for the PAMIGAMI pico, full LL, no HL, done in a night, quite bad.
 
 ## How do you compile it ?
 
