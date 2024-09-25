@@ -85,11 +85,11 @@ target_sources(ll_asserv_paminable INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/as
 target_compile_definitions(ll_asserv_paminable INTERFACE ASSERV ROBOT_PAMI PAMINABLE)
 target_link_libraries(ll_asserv_paminable INTERFACE ll_common_asserv)
 
-# Pamisérable
-add_library(ll_asserv_pamiserable INTERFACE)
-target_sources(ll_asserv_pamiserable INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver.cpp")
-target_compile_definitions(ll_asserv_pamiserable INTERFACE ASSERV ROBOT_PAMI)
-target_link_libraries(ll_asserv_pamiserable INTERFACE ll_common_asserv)
+# Pamini
+add_library(ll_asserv_pamini INTERFACE)
+target_sources(ll_asserv_pamini INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver.cpp")
+target_compile_definitions(ll_asserv_pamini INTERFACE ASSERV ROBOT_PAMI)
+target_link_libraries(ll_asserv_pamini INTERFACE ll_common_asserv)
 
 # Main robot
 add_library(ll_asserv_main INTERFACE)
@@ -128,15 +128,15 @@ pico_enable_stdio_uart(paminable 0)
 # create map/bin/hex file etc.
 pico_add_extra_outputs(paminable)
 
-add_executable(pamiserable "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp")
-target_link_libraries(pamiserable PUBLIC ll_asserv_pamiserable)
+add_executable(pamini "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/effects.cpp")
+target_link_libraries(pamini PUBLIC ll_asserv_pamini)
 
 # Common to all projects
-pico_enable_stdio_usb(pamiserable 1)
-pico_enable_stdio_uart(pamiserable 0)
+pico_enable_stdio_usb(pamini 1)
+pico_enable_stdio_uart(pamini 0)
 
 # create map/bin/hex file etc.
-pico_add_extra_outputs(pamiserable)
+pico_add_extra_outputs(pamini)
 
 add_executable(main_asserv "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp")
 target_link_libraries(main_asserv PUBLIC ll_asserv_main)

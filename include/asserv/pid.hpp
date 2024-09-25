@@ -1,7 +1,5 @@
 #pragma once
 
-#include <pico/stdlib.h>
-
 #include <shared/telemetry.hpp>
 
 struct PIDTelemData
@@ -55,7 +53,8 @@ private:
 
 	// State of PID
 	float integral;
-	float lastInput;
+	float lastError;
+	float lastInputs[3];
 	float lastOutput;
 	float lastOutputRamp;
 };

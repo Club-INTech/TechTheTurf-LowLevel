@@ -39,7 +39,9 @@ public:
 	void estop();
 
 	bool isReady();
+	bool isEstopped();
 	ControllerState getState();
+	Target getDeltaTarget();
 	void movePolar(float dst, float theta);
 	void setTarget(float dst, float theta);
 	void setRawTarget(float dst, float theta);
@@ -54,6 +56,8 @@ private:
 	float angleTolerance;
 	float amaxDstEstop;
 	float amaxAngleEstop;
+
+	bool estopped;
 
 	Target oldTarget;
 	Target target;

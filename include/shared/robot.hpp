@@ -23,19 +23,35 @@
 	// rads/s^2
 	#define MAX_ACCEL 4000.0f
 
-	// Trapezoidal profile for distance & angle
-	// mm/s
-	#define MAX_LIN_VELOCITY 300.0f
-	// mm/s^2
-	#define MAX_LIN_ACCEL 600.0f
-	// mm/s^2
-	#define MAX_LIN_ESTOP_ACCEL 2000.0f
-	// rad/s
-	#define MAX_TURN_VELOCITY 6.0f
-	// rad/s^2
-	#define MAX_TURN_ACCEL 3.0f
-	// rad/s^2
-	#define MAX_TURN_ESTOP_ACCEL 6.0f
+	#ifdef PAMINABLE
+		// Trapezoidal profile for distance & angle
+		// mm/s
+		#define MAX_LIN_VELOCITY 300.0f
+		// mm/s^2
+		#define MAX_LIN_ACCEL 600.0f
+		// mm/s^2
+		#define MAX_LIN_ESTOP_ACCEL 2000.0f
+		// rad/s
+		#define MAX_TURN_VELOCITY 6.0f
+		// rad/s^2
+		#define MAX_TURN_ACCEL 3.0f
+		// rad/s^2
+		#define MAX_TURN_ESTOP_ACCEL 6.0f
+	#else
+		// Trapezoidal profile for distance & angle
+		// mm/s
+		#define MAX_LIN_VELOCITY 700.0f
+		// mm/s^2
+		#define MAX_LIN_ACCEL 800.0f
+		// mm/s^2
+		#define MAX_LIN_ESTOP_ACCEL 2000.0f
+		// rad/s
+		#define MAX_TURN_VELOCITY 6.0f
+		// rad/s^2
+		#define MAX_TURN_ACCEL 3.0f
+		// rad/s^2
+		#define MAX_TURN_ESTOP_ACCEL 6.0f
+	#endif
 
 	// Tolerances for the controller
 	// mm
@@ -43,7 +59,7 @@
 	// rad
 	#define TOLERANCE_ANGLE (4.0f*(M_PI/180.0f))
 
-	// PIDs
+	// PIDs & PWM Settings
 	#ifdef PAMINABLE
 		// Speed PID
 		#define SPEED_PID_KP 0.001f
@@ -61,6 +77,11 @@
 		#define ANGLE_PID_KI 120.0f
 		#define ANGLE_PID_KD 80.0f
 		#define ANGLE_PID_CLAMP 100000.0f
+
+		// PWM Driver Settings
+		#define DRIVER_DUTY_OFFSET 0.05f
+		// Limit Voltage on smaller motors
+		#define DRIVER_DUTY_CLAMP 1.0f
 	#else
 		// Speed PID
 		#define SPEED_PID_KP 0.001f
@@ -74,10 +95,15 @@
 		#define DST_PID_CLAMP 3000.0f
 
 		// Angle PID
-		#define ANGLE_PID_KP 4000.0f
-		#define ANGLE_PID_KI 70.0f
+		#define ANGLE_PID_KP 1200.0f
+		#define ANGLE_PID_KI 130.0f
 		#define ANGLE_PID_KD 80.0f
 		#define ANGLE_PID_CLAMP 100000.0f
+
+		// PWM Driver Settings
+		#define DRIVER_DUTY_OFFSET 0.03f
+		// Limit Voltage on smaller motors
+		#define DRIVER_DUTY_CLAMP 0.83f
 	#endif
 
 	// I2C
@@ -90,15 +116,31 @@
 
 	// On the PCB, Left & Right incremental & encoder are inversed
 	// from original pin mapping, so we inverse it here...
-	#define LEFT_MOTOR_FW_PIN 4
-	#define LEFT_MOTOR_RW_PIN 5
-	#define RIGHT_MOTOR_FW_PIN 2
-	#define RIGHT_MOTOR_RW_PIN 3
+	#ifdef PAMINABLE
+		#define LEFT_MOTOR_FW_PIN 4
+		#define LEFT_MOTOR_RW_PIN 5
+		#define RIGHT_MOTOR_FW_PIN 2
+		#define RIGHT_MOTOR_RW_PIN 3
+	#else // Pamini
+		#define LEFT_MOTOR_FW_PIN 2
+		#define LEFT_MOTOR_RW_PIN 3
+		#define RIGHT_MOTOR_FW_PIN 4
+		#define RIGHT_MOTOR_RW_PIN 5
+	#endif
 
 	#define LEFT_INCREMENTAL_A_PIN 8
 	#define LEFT_INCREMENTAL_B_PIN 9
 	#define RIGHT_INCREMENTAL_A_PIN 6
 	#define RIGHT_INCREMENTAL_B_PIN 7
+
+	#ifndef PAMINABLE // Pami
+		#define ENABLE_EFFECTS
+
+		#define STOP_LIGHT_LEFT_PIN 10
+		#define STOP_LIGHT_RIGHT_PIN 11
+		#define BLINKER_LEFT_PIN 12
+		#define BLINKER_RIGHT_PIN 13
+	#endif
 
 	// Mech constants
 	#ifdef PAMINABLE
@@ -112,15 +154,15 @@
 		#define DRIVER_LEFT_REVERSE false
 		#define DRIVER_RIGHT_REVERSE false
 	#else
-		// Pamisérable
-		#define ENCODER_WHEEL_RADIUS (34.0f/2.0f)
-		#define ENCODER_DIST 89.0f
+		// No name pami
+		#define ENCODER_WHEEL_RADIUS (53.754f/2.0f)
+		#define ENCODER_DIST 63.0f
 
-		#define ENCODER_LEFT_REVERSE true
-		#define ENCODER_RIGHT_REVERSE false
+		#define ENCODER_LEFT_REVERSE false
+		#define ENCODER_RIGHT_REVERSE true
 
 		#define DRIVER_LEFT_REVERSE false
-		#define DRIVER_RIGHT_REVERSE true
+		#define DRIVER_RIGHT_REVERSE false
 	#endif
 #endif
 

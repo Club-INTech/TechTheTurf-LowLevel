@@ -108,7 +108,8 @@ void Driver::setPwm(float duty) {
 	fwd ^= this->reversed;
 
 	// Adjust for motor working range
-	duty += this->dutyOffset;
+	if (duty != 0.0f)
+		duty += this->dutyOffset;
 
 	this->currentDuty = duty;
 

@@ -59,5 +59,7 @@ public:
 	float encoderWheelRadius;
 	uint32_t positionLoopDownsample;
 
+	float lastDt;
+
 	bool running;
 };

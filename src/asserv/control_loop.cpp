@@ -33,6 +33,8 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLef
 	this->rSpeedTarget = 0;
 	this->running = false;
 
+	this->lastDt = 0;
+
 	mutex_init(&this->mutex);
 }
 
@@ -156,6 +158,8 @@ void ControlLoop::work() {
 	this->drvRight->setPwm(rSpeed);
 
 	mutex_exit(&this->mutex);
+
+	this->lastDt = dt;
 
 	//printf("cl%f cr%f tl%f tr%f sl%f sr%f x%f y%f d%f t%f dt%f\n", lSpeed, rSpeed, this->lSpeedTarget, this->rSpeedTarget, lCurrentSpeed, rCurrentSpeed, this->odo->x, this->odo->y, this->odo->dst, this->odo->theta, dt*1000.0f);
 

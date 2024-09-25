@@ -2,7 +2,9 @@
 
 #include <asserv/pid.hpp>
 
-// https://www.pm-robotix.eu/2022/01/19/ameliorer-vos-regulateurs-pid/
+// Base implem: https://gist.github.com/bradley219/5373998
+// Improvments: https://www.pm-robotix.eu/2022/01/19/ameliorer-vos-regulateurs-pid/
+// More improvments: Eq 3 from https://www.controleng.com/articles/pid-correction-based-control-system-implementation/
 
 PID::PID(float Kp, float Ki, float Kd, float ramp, float lpf, float min, float max) {
 	setPID(Kp,Ki,Kd);
@@ -50,10 +52,12 @@ float PID::clampVal(float val) {
 	return val;
 }
 
-// From: https://gist.github.com/bradley219/5373998
 float PID::calculate(float desired, float current, float dt) {
-	if (this->passthrough)
-		return clampVal(desired)*this->Kp;
+	if (this->passthrough) {
+		float output = clampVal(desired)*this->Kp;
+		this->telem.add(PIDTelemData(desired, current, output), dt);
+		return output;
+	}
 
 	// Calculate error
 	float error = desired - current;
@@ -63,14 +67,17 @@ float PID::calculate(float desired, float current, float dt) {
 
 	// Integral term
 	// Accumulate with Ki to avoid bumps when changing Ki in real time
-	this->integral += this->Ki * (error * dt);
+	// Use a weighed average of the current and last error to avoid noise
+	this->integral += this->Ki * (((error + this->lastError)/2.0f) * dt);
 	// Clamp to avoid reset windup
 	this->integral = clampVal(this->integral);
 	float Iout = this->integral;
 
 	// Derivative term
 	// Only on the input to avoid derivative kick
-	float derivative = -((current - this->lastInput) / dt);
+	// Apply small FIR filter to the input to avoir noise
+	float derivative = -(((current - this->lastInputs[2] + 3.0f*(this->lastInputs[0] - this->lastInputs[1]))/6.0f) / dt);
+	//float derivative = -((current - this->lastInputs[0]) / dt);
 	float Dout = this->Kd * derivative;
 
 	// Calculate total output
@@ -79,8 +86,11 @@ float PID::calculate(float desired, float current, float dt) {
 	// Restrict to max/min
 	output = clampVal(output);
 
-	// Save old input for derivative
-	this->lastInput = current;
+	// Save old input & error for derivative & integral
+	this->lastError = error;
+	for (int i=2;i>0;i--)
+		this->lastInputs[i] = this->lastInputs[i-1];
+	this->lastInputs[0] = current;
 
 	// Apply derivative limiter
 	if (this->outRamp > 0) {
@@ -108,7 +118,9 @@ float PID::calculate(float desired, float current, float dt) {
 
 void PID::reset() {
 	this->integral = 0;
-	this->lastInput = 0;
+	for (int i=0;i<3;i++)
+		this->lastInputs[i] = 0;
+	this->lastError = 0;
 	this->lastOutput = 0;
 	this->lastOutputRamp = 0;
 }

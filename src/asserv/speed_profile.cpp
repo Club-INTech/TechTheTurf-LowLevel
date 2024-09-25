@@ -70,6 +70,14 @@ bool SpeedProfile::isStopping() {
 	return this->stopAmax != 0;
 }
 
+SpeedProfileState SpeedProfile::getState() {
+	if (this->time < this->ta+this->tc)
+		return SpeedProfileState::accelerating;
+	if (this->time < 2*this->ta+this->tc)
+		return SpeedProfileState::plateau;
+	return SpeedProfileState::decelerate;
+}
+
 float SpeedProfile::getTotalTime() {
 	float time = this->ta*2;
 	if (this->trap)

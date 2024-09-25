@@ -1,3 +1,4 @@
+#include "asserv/effects.hpp"
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
@@ -30,6 +31,9 @@ void comm_thread() {
 }
 
 int main() {
+	// Set overclock
+	//set_sys_clock_khz(240000, true);
+
 	// Init PicoSDK
 	stdio_init_all();
 
@@ -56,6 +60,8 @@ int main() {
 #else // ! ROBOT_MAIN
 	Driver *lDrv = new Driver(LEFT_MOTOR_FW_PIN, LEFT_MOTOR_RW_PIN, DRIVER_LEFT_REVERSE);
 	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, DRIVER_RIGHT_REVERSE);
+	lDrv->setDutyOffset(DRIVER_DUTY_OFFSET);
+	rDrv->setDutyOffset(DRIVER_DUTY_OFFSET);
 #endif
 
 	// Init odometry
@@ -80,8 +86,8 @@ int main() {
 	rSpeedPid->setPassthrough(true);
 #else
 	// All other robots use PWM
-	lSpeedPid->setClamp(-1.0f, 1.0f);
-	rSpeedPid->setClamp(-1.0f, 1.0f);
+	lSpeedPid->setClamp(-DRIVER_DUTY_CLAMP, DRIVER_DUTY_CLAMP);
+	rSpeedPid->setClamp(-DRIVER_DUTY_CLAMP, DRIVER_DUTY_CLAMP);
 #endif
 
 	// Setup PLLs
@@ -105,6 +111,10 @@ int main() {
 									lSpeedPid, rSpeedPid, dstPid, anglePid, lPll, rPll, lSpeedAlim, rSpeedAlim,
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
+#ifdef ENABLE_EFFECTS
+	Effects *effects = new Effects(cl, STOP_LIGHT_LEFT_PIN, BLINKER_LEFT_PIN, STOP_LIGHT_RIGHT_PIN, BLINKER_RIGHT_PIN);
+#endif
+
 	// Init motor control
 	multicore_launch_core1(comm_thread);
 
@@ -115,6 +125,9 @@ int main() {
 		absolute_time_t start = get_absolute_time();
 
 		cl->work();
+#ifdef ENABLE_EFFECTS
+		effects->work();
+#endif
 
 		absolute_time_t end = get_absolute_time();
 

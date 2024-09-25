@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include <asserv/controller.hpp>
 
 Controller::Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle, float dstTolerance, float angleTolerance, float amaxDstEstop, float amaxAngleEstop) {
@@ -9,6 +9,7 @@ Controller::Controller(Odometry *odo, SpeedProfile *spDst, SpeedProfile *spAngle
 	this->angleTolerance = angleTolerance;
 	this->amaxDstEstop = amaxDstEstop;
 	this->amaxAngleEstop = amaxAngleEstop;
+	this->estopped = false;
 	this->reset();
 }
 
@@ -37,13 +38,24 @@ bool Controller::isReady() {
 	return this->state == ControllerState::reachedTarget;
 }
 
+bool Controller::isEstopped() {
+	return this->estopped;
+}
+
 ControllerState Controller::getState() {
 	return this->state;
+}
+
+Target Controller::getDeltaTarget() {
+	Target delta;
+	delta.set(this->target.dst-this->oldTarget.dst, this->target.theta-this->oldTarget.theta);
+	return delta;
 }
 
 void Controller::estop() {
 	this->spDst->stop(this->amaxDstEstop);
 	this->spAngle->stop(this->amaxAngleEstop);
+	this->estopped = true;
 }
 
 void Controller::work(float dt) {
@@ -94,6 +106,7 @@ void Controller::movePolar(float dst, float theta) {
 
 void Controller::setTarget(float dst, float theta) {
 	this->oldTarget = this->target;
+	this->estopped = false;
 	this->target.set(dst, theta);
 	this->spDst->initMove(dst - this->oldTarget.dst);
 	this->spAngle->initMove(theta - this->oldTarget.theta);
@@ -101,6 +114,7 @@ void Controller::setTarget(float dst, float theta) {
 }
 
 void Controller::setRawTarget(float dst, float theta) {
+	this->estopped = false;
 	this->target.set(dst, theta);
 }
 
@@ -108,6 +122,7 @@ void Controller::reset(float dst, float theta) {
 	this->target.set(dst, theta);
 	this->oldTarget.set(dst, theta);
 	this->state = ControllerState::reachedTarget;
+	this->estopped = false;
 	this->spDst->reset();
 	this->spAngle->reset();
 }

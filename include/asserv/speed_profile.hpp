@@ -16,6 +16,13 @@
 		We probably won't be doing it here though as it costs more ressources.
 */
 
+enum SpeedProfileState
+{
+	accelerating,
+	plateau,
+	decelerate
+};
+
 class SpeedProfile
 {
 public:
@@ -31,6 +38,8 @@ public:
 	void initMove(float distance);
 	// Are we stopping using the stop function, so not the normal decell ?
 	bool isStopping();
+	// Get current state of the speed profile
+	SpeedProfileState getState();
 	// Decelerates to a stop, if the acceleration is zero, the default maximum acceleration is used
 	void stop(float acceleration = 0);
 	// Applies the profile and returns the current position
