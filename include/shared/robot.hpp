@@ -138,6 +138,7 @@
 
 		#define STOP_LIGHT_LEFT_PIN 10
 		#define STOP_LIGHT_RIGHT_PIN 11
+		#define STOP_LIGHT_CENTER_PIN 14
 		#define BLINKER_LEFT_PIN 12
 		#define BLINKER_RIGHT_PIN 13
 	#endif

@@ -112,7 +112,7 @@ int main() {
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
 #ifdef ENABLE_EFFECTS
-	Effects *effects = new Effects(cl, STOP_LIGHT_LEFT_PIN, BLINKER_LEFT_PIN, STOP_LIGHT_RIGHT_PIN, BLINKER_RIGHT_PIN);
+	Effects *effects = new Effects(cl, STOP_LIGHT_LEFT_PIN, BLINKER_LEFT_PIN, STOP_LIGHT_RIGHT_PIN, BLINKER_RIGHT_PIN, STOP_LIGHT_CENTER_PIN);
 #endif
 
 	// Init motor control

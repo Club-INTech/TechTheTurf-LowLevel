@@ -71,9 +71,9 @@ bool SpeedProfile::isStopping() {
 }
 
 SpeedProfileState SpeedProfile::getState() {
-	if (this->time < this->ta+this->tc)
+	if (this->time < this->ta)
 		return SpeedProfileState::accelerating;
-	if (this->time < 2*this->ta+this->tc)
+	if (this->trap && this->time < this->ta+this->tc)
 		return SpeedProfileState::plateau;
 	return SpeedProfileState::decelerate;
 }
