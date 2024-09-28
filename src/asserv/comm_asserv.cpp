@@ -1,3 +1,4 @@
+#include "asserv/effects.hpp"
 #include <asserv/comm_asserv.hpp>
 #include <asserv/pid.hpp>
 
@@ -20,8 +21,9 @@ static inline PID *getPid(ControlLoop *cl, uint8_t idx) {
 	}
 }
 
-CommAsserv::CommAsserv(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, ControlLoop *cl) : Comm(sdaPin, sclPin, addr, i2c) {
+CommAsserv::CommAsserv(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, ControlLoop *cl, Effects *eff) : Comm(sdaPin, sclPin, addr, i2c) {
 	this->cl = cl;
+	this->effects = eff;
 	for (size_t i=0; i<4; i++)
 		addTelem(i, &getPid(cl, i)->telem);
 }
@@ -177,6 +179,15 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				this->sendDataSize = 4*sizeof(float);
 			}
 #endif
+			else if (subcmd == 7) { // Effects
+				if (!this->effects)
+					break;
+				this->effects->setAuto(data[1]);
+				this->effects->setBlinker((BlinkerState)data[2]);
+				this->effects->setStop(data[3]);
+				this->effects->setCenterStop(data[4]);
+				this->effects->setHeadlights((HeadlightState)data[5]);
+			}
 			break;
 		default:
 			break;

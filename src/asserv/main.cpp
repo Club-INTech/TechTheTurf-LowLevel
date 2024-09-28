@@ -21,8 +21,14 @@ void comm_thread() {
 	// Grab the ref from the other core
 	ControlLoop *cl = (ControlLoop*)multicore_fifo_pop_blocking();
 
+#ifdef ENABLE_EFFECTS
+	Effects *effects = (Effects*)multicore_fifo_pop_blocking();
+#else
+	Effects *effects = nullptr;
+#endif
+
 	// Init HL Comms on other core to handle interrupts there
-	CommAsserv *hlComm = new CommAsserv(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_INSTANCE, cl);
+	CommAsserv *hlComm = new CommAsserv(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_INSTANCE, cl, effects);
 
 	while (true) {
 		hlComm->work();
@@ -112,7 +118,8 @@ int main() {
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
 #ifdef ENABLE_EFFECTS
-	Effects *effects = new Effects(cl, STOP_LIGHT_LEFT_PIN, BLINKER_LEFT_PIN, STOP_LIGHT_RIGHT_PIN, BLINKER_RIGHT_PIN, STOP_LIGHT_CENTER_PIN);
+	Effects *effects = new Effects(cl, STOP_LIGHT_LEFT_PIN, BLINKER_LEFT_PIN, STOP_LIGHT_RIGHT_PIN, 
+						BLINKER_RIGHT_PIN, STOP_LIGHT_CENTER_PIN, HEADLIGHT_LEFT_PIN, HEADLIGHT_RIGHT_PIN);
 #endif
 
 	// Init motor control
@@ -120,6 +127,9 @@ int main() {
 
 	// Send the ControlLoop ref over to the other core
 	multicore_fifo_push_blocking((uint32_t)cl);
+#ifdef ENABLE_EFFECTS
+	multicore_fifo_push_blocking((uint32_t)effects);
+#endif
 
 	while (true) {
 		absolute_time_t start = get_absolute_time();

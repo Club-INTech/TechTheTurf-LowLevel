@@ -141,6 +141,8 @@
 		#define STOP_LIGHT_CENTER_PIN 14
 		#define BLINKER_LEFT_PIN 12
 		#define BLINKER_RIGHT_PIN 13
+		#define HEADLIGHT_LEFT_PIN 17
+		#define HEADLIGHT_RIGHT_PIN 16
 	#endif
 
 	// Mech constants

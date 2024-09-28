@@ -2,7 +2,7 @@
 	"folders":
 	[
 		{
-			"folder_exclude_patterns": ["build", ".pio"],
+			"folder_exclude_patterns": ["build", ".pio", ".cache"],
 			"path": ".",
 		}
 	],
