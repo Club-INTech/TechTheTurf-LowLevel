@@ -28,7 +28,7 @@ void comm_thread() {
 #endif
 
 	// Init HL Comms on other core to handle interrupts there
-	CommAsserv *hlComm = new CommAsserv(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_INSTANCE, cl, effects);
+	CommAsserv *hlComm = new CommAsserv(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_COMM_INSTANCE, cl, effects);
 
 	while (true) {
 		hlComm->work();
@@ -51,13 +51,13 @@ int main() {
 #ifdef ROBOT_MAIN
 
 #ifdef ROBOT_MAIN_ODRIVE
-	CommODrive *odrive = new CommODrive(UART_INSTANCE, UART_TX, UART_RX);
+	CommODrive *odrive = new CommODrive(UART_BG_INSTANCE, UART_TX, UART_RX);
 
 	DriverODrive *lDrv = new DriverODrive(odrive, ODRIVE_LEFT_AXIS, DRIVER_LEFT_REVERSE);
 	DriverODrive *rDrv = new DriverODrive(odrive, ODRIVE_RIGHT_AXIS, DRIVER_RIGHT_REVERSE);
 #else
-	CommBG *lBg = new CommBG(BG_LEFT_ID, UART_INSTANCE, UART_TX, UART_RX);
-	CommBG *rBg = new CommBG(BG_RIGHT_ID, UART_INSTANCE, UART_TX, UART_RX);
+	CommBG *lBg = new CommBG(BG_LEFT_ID, UART_BG_INSTANCE, UART_TX, UART_RX);
+	CommBG *rBg = new CommBG(BG_RIGHT_ID, UART_BG_INSTANCE, UART_TX, UART_RX);
 
 	DriverBG *lDrv = new DriverBG(lBg, DRIVER_LEFT_REVERSE);
 	DriverBG *rDrv = new DriverBG(rBg, DRIVER_RIGHT_REVERSE);

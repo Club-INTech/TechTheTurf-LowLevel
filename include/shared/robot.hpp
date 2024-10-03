@@ -107,7 +107,7 @@
 	#endif
 
 	// I2C
-	#define I2C_INSTANCE i2c0
+	#define I2C_COMM_INSTANCE i2c0
 	#define I2C_ADDR 0x69
 
 	// Pins
@@ -222,11 +222,11 @@
 	#define ANGLE_PID_CLAMP 100000.0f
 
 	// I2C
-	#define I2C_INSTANCE i2c0
+	#define I2C_COMM_INSTANCE i2c0
 	#define I2C_ADDR 0x69
 
 	// UART BG/ODrive
-	#define UART_INSTANCE uart0
+	#define UART_BG_INSTANCE uart0
 
 	// BG Motors
 	#define BG_LEFT_ID 0
@@ -265,7 +265,7 @@
 
 #ifdef ROBOT_MAIN
 	// I2C
-	#define I2C_INSTANCE i2c0
+	#define I2C_COMM_INSTANCE i2c0
 	#define I2C_ADDR 0x68
 
 	// UART Dynamixel

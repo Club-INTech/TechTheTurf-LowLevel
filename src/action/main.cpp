@@ -28,7 +28,7 @@ void comm_thread() {
 	Arm *leftArm = (Arm*)multicore_fifo_pop_blocking();
 
 	// Init HL Comms on other core to handle interrupts there
-	CommAction *hlComm = new CommAction(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_INSTANCE, elev, rightArm, leftArm);
+	CommAction *hlComm = new CommAction(I2C_SDA, I2C_SCL, I2C_ADDR, I2C_COMM_INSTANCE, elev, rightArm, leftArm);
 
 	multicore_fifo_push_blocking((uint32_t)hlComm);
 
