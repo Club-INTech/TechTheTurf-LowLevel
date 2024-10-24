@@ -44,10 +44,11 @@ endif()
 
 # Shared library to all pico FW
 add_library(ll_common INTERFACE)
-target_sources(ll_common INTERFACE  "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.cpp")
+pico_generate_pio_header(ll_common ${CMAKE_CURRENT_LIST_DIR}/pio/ws2812.pio)
+target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/neopixel_connect.cpp")
 
 # Linked libs
-target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_multicore pico_sync hardware_i2c)
+target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_multicore pico_sync hardware_i2c hardware_pio hardware_dma)
 
 # Shared library to all pico asserv FW
 add_library(ll_common_asserv INTERFACE)
@@ -55,7 +56,7 @@ target_sources(ll_common_asserv INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asser
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/control_loop.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/pid.cpp"
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/odometry.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/controller.cpp"
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/pll.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/accel_limiter.cpp"
-                            "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/speed_profile.cpp")
+                            "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/speed_profile.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/effects.cpp")
 
 # Linked Libs
 target_link_libraries(ll_common_asserv INTERFACE ll_common hardware_pwm hardware_pio)
@@ -127,8 +128,7 @@ pico_enable_stdio_uart(paminable 0)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(paminable)
-
-add_executable(pamini "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/effects.cpp")
+add_executable(pamini "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp")
 target_link_libraries(pamini PUBLIC ll_asserv_pamini)
 
 # Common to all projects

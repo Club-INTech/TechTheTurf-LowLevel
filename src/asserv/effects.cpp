@@ -1,3 +1,4 @@
+#include "shared/neopixel_connect.h"
 #include <hardware/gpio.h>
 #include <hardware/clocks.h>
 #include <asserv/speed_profile.hpp>
@@ -6,9 +7,10 @@
 #include <asserv/effects.hpp>
 #include <cmath>
 #include <cstdint>
+#include <hardware/timer.h>
 
 Effects::Effects(ControlLoop *cl, uint8_t left_stop_pin, uint8_t left_blinker_pin, uint8_t right_stop_pin, uint8_t right_blinker_pin, uint8_t center_brake_pin,
-				uint8_t left_headlight, uint8_t right_headlight) {
+				uint8_t left_headlight, uint8_t right_headlight, uint8_t ws_pin, uint8_t number_leds) : pixels(ws_pin, number_leds, pio1, 0) {
 	this->cl = cl;
 	this->left_stop_pin = left_stop_pin;
 	this->right_stop_pin = right_stop_pin;
@@ -17,6 +19,7 @@ Effects::Effects(ControlLoop *cl, uint8_t left_stop_pin, uint8_t left_blinker_pi
 	this->center_brake_pin = center_brake_pin;
 	this->left_headlight = left_headlight;
 	this->right_headlight = right_headlight;
+	this->ws_pin = ws_pin;
 
 	gpio_init(left_blinker_pin);
 	gpio_init(right_blinker_pin);
@@ -71,8 +74,12 @@ Effects::Effects(ControlLoop *cl, uint8_t left_stop_pin, uint8_t left_blinker_pi
 	this->stopCenter = false;
 	this->autoMode = true;
 
+	this->pixels.fill(0x0, true);
+	this->firstPixelHue = 0;
+
 	this->centerTimer = 0;
 	this->blinkerTimer = 0;
+	this->ringTimer = 0;
 }
 
 Effects::~Effects() {
@@ -97,7 +104,7 @@ void Effects::work() {
 		} else if (this->cl->running && this->cl->ctrl->getState() == ControllerState::reachingTheta) {
 			Target dl = this->cl->ctrl->getDeltaTarget();
 			float dth = dl.theta;
-			if (abs(dth) >= 0.2f) {
+			if (std::abs(dth) >= 0.2f) {
 				if (dth > 0)
 					this->blinkers = BlinkerState::left;
 				else
@@ -181,4 +188,21 @@ void Effects::work() {
 	} else {
 		pwm_set_both_levels(pwm_gpio_to_slice_num(this->left_headlight), 0, 0);
 	}
+
+
+	if (this->ringTimer >= 16e-3) {
+		if (this->firstPixelHue >= 5*65536)
+			this->firstPixelHue = 0;
+
+		for (int i=0; i<this->pixels.size(); i++) {
+			int pixelHue = this->firstPixelHue + (i * 65536L / this->pixels.size());
+			this->pixels.setPixel(i, this->pixels.ColorHSV(pixelHue));
+		}
+		this->firstPixelHue += 256;
+		this->ringTimer = 0;
+	}
+	this->ringTimer += dt;
+
+
+	this->pixels.show();
 }

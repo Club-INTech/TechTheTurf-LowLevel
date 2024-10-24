@@ -143,6 +143,9 @@
 		#define BLINKER_RIGHT_PIN 13
 		#define HEADLIGHT_LEFT_PIN 17
 		#define HEADLIGHT_RIGHT_PIN 16
+
+		#define WS2812B_PIN 15
+		#define WS2812B_COUNT 4
 	#endif
 
 	// Mech constants

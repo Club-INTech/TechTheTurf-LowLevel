@@ -1,0 +1,2 @@
+CompileFlags:
+	Add: [-I/usr/lib/gcc/arm-none-eabi/13.2.1/include/,-I/usr/lib/gcc/arm-none-eabi/13.2.1/include-fixed/,-I/usr/lib/arm-none-eabi/include/,-I/usr/lib/arm-none-eabi/include/c++/13.2.1/,-I/usr/lib/arm-none-eabi/include/c++/13.2.1/arm-none-eabi/]
