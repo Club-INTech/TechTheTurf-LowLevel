@@ -2,3 +2,4 @@ build/
 .pio/
 .cache/
 *.sublime-workspace
+compile_commands.json
