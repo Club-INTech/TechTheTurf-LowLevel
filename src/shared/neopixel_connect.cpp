@@ -17,6 +17,7 @@
  */
 #include <hardware/timer.h>
 #include <shared/neopixel_connect.h>
+#include <hardware/clocks.h>
 
 
 /// @brief Constructor - pio will be set to pio0 and sm to 0
@@ -45,7 +46,7 @@ NeoPixelConnect::NeoPixelConnect(uint8_t pinNumber, uint16_t numberOfPixels, PIO
 /// @param numberOfPixels: Number of pixels in the string
 void NeoPixelConnect::init(uint8_t pinNumber, uint16_t numberOfPixels) {
     uint offset = pio_add_program(this->pixelPio, &ws2812_program);
-    ws2812_program_init(this->pixelPio, this->pixelSm, offset, pinNumber, 800000, false);
+    programInit(this->pixelPio, this->pixelSm, offset, pinNumber, 800000, false);
 
     // save the number of pixels in use
     this->actual_number_of_pixels = numberOfPixels;
@@ -144,4 +145,21 @@ void NeoPixelConnect::putPixel(uint32_t pixel_grb) {
 
 uint16_t NeoPixelConnect::size(void) {
     return this->actual_number_of_pixels;
+}
+
+void NeoPixelConnect::programInit(PIO pio, uint sm, uint offset, uint pin, float freq, bool rgbw) {
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = ws2812_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+    sm_config_set_out_shift(&c, false, true, rgbw ? 32 : 24);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    int cycles_per_bit = ws2812_T1 + ws2812_T2 + ws2812_T3;
+    float div = clock_get_hz(clk_sys) / (freq * cycles_per_bit);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
 }

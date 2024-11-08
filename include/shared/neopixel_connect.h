@@ -29,7 +29,7 @@
 #include <ws2812.pio.h>
 
 #ifndef MAXIMUM_NUM_NEOPIXELS
-#   define MAXIMUM_NUM_NEOPIXELS 1024
+#   define MAXIMUM_NUM_NEOPIXELS 128
 #endif
 
 // Pixel buffer array offsets
@@ -175,6 +175,8 @@ private:
     /// @brief set a pixel's value to reflect pixel_grb
     /// @param pixel_grb: rgb represented as a 32 bit value
     void putPixel(uint32_t pixel_grb); //{
+
+    static void programInit(PIO pio, uint sm, uint offset, uint pin, float freq, bool rgbw);
 
     // pio - 0 or 1
     PIO pixelPio;

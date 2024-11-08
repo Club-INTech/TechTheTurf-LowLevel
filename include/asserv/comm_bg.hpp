@@ -7,7 +7,7 @@
 #include <hardware/uart.h>
 #include <stdint.h>
 
-enum MotionControlType {
+enum class MotionControlType : uint8_t {
 	torque            = 0x00,     //!< Torque control
 	velocity          = 0x01,     //!< Velocity motion control
 	angle             = 0x02,     //!< Position/angle motion control

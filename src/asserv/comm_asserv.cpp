@@ -182,11 +182,12 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			else if (subcmd == 7) { // Effects
 				if (!this->effects)
 					break;
-				this->effects->setAuto(data[1]);
+				this->effects->setControlState((ControlState)data[1]);
 				this->effects->setBlinker((BlinkerState)data[2]);
 				this->effects->setStop(data[3]);
 				this->effects->setCenterStop(data[4]);
 				this->effects->setHeadlights((HeadlightState)data[5]);
+				this->effects->setRing((RingState)data[6]);
 			}
 			break;
 		default:

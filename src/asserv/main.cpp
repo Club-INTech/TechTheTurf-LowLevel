@@ -118,9 +118,35 @@ int main() {
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
 #ifdef ENABLE_EFFECTS
-	Effects *effects = new Effects(cl, STOP_LIGHT_LEFT_PIN, BLINKER_LEFT_PIN, STOP_LIGHT_RIGHT_PIN, 
-						BLINKER_RIGHT_PIN, STOP_LIGHT_CENTER_PIN, HEADLIGHT_LEFT_PIN, HEADLIGHT_RIGHT_PIN,
-						WS2812B_PIN, WS2812B_COUNT);
+
+	WS281XProvider *strip = new WS281XProvider(WS2812B_PIN, WS2812B_COUNT);
+
+#ifndef PAMINABLE // Pamini
+	strip->setLedParams(0, LedFunction::blinker, LedPosition::right | LedPosition::rear);
+	strip->setLedParams(7, LedFunction::blinker, LedPosition::right | LedPosition::front);
+	strip->setLedParams(2, LedFunction::blinker, LedPosition::left | LedPosition::rear);
+	strip->setLedParams(5, LedFunction::blinker, LedPosition::left | LedPosition::front);
+
+	strip->setLedParams(1, LedFunction::brakeLight, LedPosition::right | LedPosition::rear);
+	strip->setLedParams(3, LedFunction::brakeLight, LedPosition::left | LedPosition::rear);
+
+	strip->setLedParams(6, LedFunction::headlight, LedPosition::right | LedPosition::front);
+	strip->setLedParams(4, LedFunction::headlight, LedPosition::left | LedPosition::front);
+
+	strip->setLedParamsRange(8, WS2812B_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
+
+	strip->setLedOrderRange(0, 7, false); // RGB on WS2811
+	strip->setLedOrderRange(8, WS2812B_COUNT-1, true); // GRB on WS2812B (default, but still put)
+#endif
+
+	//for (int i=0;i<strip->getSize();i++) {
+	//	strip->setColorRaw(i, 0xF00000);
+	//}
+	//strip->setColorRaw(0, 0xF00000);
+	//strip->display();
+
+	//while (true);
+	Effects *effects = new Effects(cl, strip, STOP_LIGHT_CENTER_PIN);
 #endif
 
 	// Init motor control

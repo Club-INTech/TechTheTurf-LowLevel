@@ -25,7 +25,7 @@ include(${PICO_SDK_INIT_CMAKE_FILE})
 
 project(ll C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Initialize the SDK
 pico_sdk_init()

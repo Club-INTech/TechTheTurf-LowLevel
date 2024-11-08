@@ -30,7 +30,7 @@ void DriverBG::setPwm(float velocity) {
 
 void DriverBG::setEnable(bool enabled) {
 	if (!this->status && enabled) {
-		this->bg->setMotionControl(MotionControlType::velocity);
+		this->bg->setMotionControl(static_cast<uint8_t>(MotionControlType::velocity));
 		this->bg->enable();
 		this->status = true;
 	} else if (this->status && !enabled) {

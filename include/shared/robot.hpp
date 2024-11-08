@@ -136,16 +136,10 @@
 	#ifndef PAMINABLE // Pami
 		#define ENABLE_EFFECTS
 
-		#define STOP_LIGHT_LEFT_PIN 10
-		#define STOP_LIGHT_RIGHT_PIN 11
 		#define STOP_LIGHT_CENTER_PIN 14
-		#define BLINKER_LEFT_PIN 12
-		#define BLINKER_RIGHT_PIN 13
-		#define HEADLIGHT_LEFT_PIN 17
-		#define HEADLIGHT_RIGHT_PIN 16
 
 		#define WS2812B_PIN 15
-		#define WS2812B_COUNT 4
+		#define WS2812B_COUNT 47
 	#endif
 
 	// Mech constants
@@ -160,7 +154,7 @@
 		#define DRIVER_LEFT_REVERSE false
 		#define DRIVER_RIGHT_REVERSE false
 	#else
-		// No name pami
+		// Pamini
 		#define ENCODER_WHEEL_RADIUS (53.754f/2.0f)
 		#define ENCODER_DIST 63.0f
 
@@ -168,7 +162,7 @@
 		#define ENCODER_RIGHT_REVERSE true
 
 		#define DRIVER_LEFT_REVERSE false
-		#define DRIVER_RIGHT_REVERSE false
+		#define DRIVER_RIGHT_REVERSE true
 	#endif
 #endif
 
