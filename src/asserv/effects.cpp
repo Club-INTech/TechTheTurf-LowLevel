@@ -1,4 +1,5 @@
 #include "shared/neopixel_connect.h"
+#include <algorithm>
 #include <hardware/gpio.h>
 #include <hardware/clocks.h>
 #include <asserv/speed_profile.hpp>
@@ -42,8 +43,11 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin) {
 	this->leds->setColor(0x0);
 	this->leds->display();
 	this->firstPixelHue = 0;
+	this->chaseOffset = 0;
+	this->wiperState = 0;
 
 	this->centerTimer = 0;
+	this->fancyBlinkerTimer = 0;
 	this->blinkerTimer = 0;
 	this->rainbowTimer = 0;
 }
@@ -57,7 +61,13 @@ void Effects::work() {
 	float dt = ((float)absolute_time_diff_us(this->lastTime, time))/((float)1e6);
 	this->lastTime = time;
 
-	// Generate light controls from state
+	// If we're not controlled, still display
+	if (this->controlState == ControlState::off) {
+		this->leds->display();
+		return;
+	}
+
+	// Generate light controls from state when in automatic
 	if (this->controlState == ControlState::automatic) {
 		if (this->cl->running && this->cl->ctrl->isEstopped()) {
 			this->blinkers = BlinkerState::estop;
@@ -80,14 +90,93 @@ void Effects::work() {
 
 		this->stopping = this->cl->running && braking;
 		this->headlights = HeadlightState::off;
+
+		this->stopCenter = this->cl->running;
 	}
 
+	// Apply effects from states
+
+	// Ring effects
+	float rainbowPeriod = this->ringState == RingState::speed ? std::clamp(1.0f/this->cl->absSpeed, 4e-3f, 32e-3f) : 16e-3f;
+
+	if (this->controlState != ControlState::gay && this->ringState == RingState::off) {
+		// Turn off the ring
+		this->leds->setColor(0x0, 0x0, LedFunction::ringLight);
+	} else if ((this->ringState == RingState::rainbow || this->ringState == RingState::speed || this->controlState == ControlState::gay) && this->rainbowTimer >= rainbowPeriod) {
+		// Ring rainbow + Gay mode
+		if (this->firstPixelHue >= 5*65536)
+			this->firstPixelHue = 0;
+
+		LedFunction lfunc = this->controlState == ControlState::gay ? LedFunction::all : LedFunction::ringLight;
+
+		size_t ringSize = this->leds->getSizeParam(lfunc);
+		size_t i=0;
+		for (size_t idx : this->leds->range(lfunc)) {
+			int pixelHue = this->firstPixelHue + (i * 65536L / ringSize);
+			this->leds->setColorRaw(idx, NeoPixelConnect::ColorHSV(pixelHue), this->controlState == ControlState::gay ? RING_BRIGHTNESS : RING_BRIGHTNESS_DIM);
+			i++;
+		}
+		this->firstPixelHue += 256;
+		this->rainbowTimer = 0;
+	} else if (this->ringState == RingState::chase && this->rainbowTimer >= rainbowPeriod) {
+		// Chase mode
+		size_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		size_t i = 0;
+		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
+			if (i == this->chaseOffset)
+				this->leds->setColorRaw(idx, INTECH_BLUE, RING_BRIGHTNESS);
+			else if (i == (this->chaseOffset + ringSize/2) % ringSize)
+				this->leds->setColorRaw(idx, INTECH_YELLOW, RING_BRIGHTNESS);
+			else
+				this->leds->setColorRaw(idx, 0, 0);
+			i++;
+		}
+		this->chaseOffset++;
+		this->chaseOffset %= ringSize;
+		this->rainbowTimer = 0;
+	} else if (this->ringState == RingState::wiper && this->rainbowTimer >= rainbowPeriod) {
+		// Wiper mode
+		size_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		size_t i = 0;
+		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
+			if (i == this->chaseOffset)
+				this->leds->setColorRaw(idx, this->wiperState == 0 ? INTECH_BLUE : INTECH_YELLOW, RING_BRIGHTNESS);
+			i++;
+		}
+		this->chaseOffset++;
+		if (this->chaseOffset >= ringSize) {
+			this->chaseOffset = 0;
+			this->wiperState = (this->wiperState+1)%2;
+		}
+		this->rainbowTimer = 0;
+	}
+	this->rainbowTimer += dt;
+
+	// Only apply other effects if we're in a "normal" control mode
 	if (this->controlState != ControlState::gay) {
+		// Fancy blinkers animation...
+		float period = (this->blinkers == BlinkerState::estop ? BLINKER_PERIOD/2.0f : BLINKER_PERIOD);
+		size_t blinkerSize = this->leds->getSizeParam(LedFunction::fancyBlinker, LedPosition::right);
+		float blinkerProgress = std::clamp(this->blinkerTimer / period, 0.0f, 1.0f);
+		size_t blinkerCurrentPos = blinkerProgress * blinkerSize;
+		uint8_t blinkerBrightness = 255*(blinkerProgress - (((float)blinkerCurrentPos)/((float)blinkerSize)));
+		if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::left) {
+			size_t idx = 0;
+			for (size_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::right)) {
+				this->leds->setColorRaw(pos, BLINKER_RGB, this->blinkerTimer <= period ? idx > blinkerCurrentPos ? 0 : idx == blinkerCurrentPos ? blinkerBrightness : 255 : 0);
+				idx++;
+			}
+		}
+		blinkerCurrentPos = blinkerSize-1-blinkerCurrentPos;
+		if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::right) {
+			size_t idx = 0;
+			for (size_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::left)) {
+				this->leds->setColorRaw(pos, BLINKER_RGB, this->blinkerTimer <= period ? idx < blinkerCurrentPos ? 0 : idx == blinkerCurrentPos ? blinkerBrightness : 255 : 0);
+				idx++;
+			}
+		}
 
-		// This is hard coded for now
-		this->stopCenter = this->cl->running;
-
-		// Apply state to lights
+		// Normal blinkers
 		uint32_t rgb;
 		switch (this->blinkers) {
 			case BlinkerState::off:
@@ -121,6 +210,7 @@ void Effects::work() {
 				break;
 		}
 
+		// Stop lights
 		if (this->stopping) {
 			this->leds->setColor(BRAKE_RGB, 255, LedFunction::brakeLight, LedPosition::rear);
 			pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 255);
@@ -138,29 +228,9 @@ void Effects::work() {
 			}
 		}
 
-		this->leds->setColor(HEADLIGHTS_RGB, this->headlights == HeadlightState::off ? 0 : this->headlights == HeadlightState::full ? 255 : HEADLIGHTS_DIM, LedFunction::headlight);
+		this->leds->setColor(this->headlights == HeadlightState::full ? HEADLIGHTS_RGB : HEADLIGHTS_DIM_RGB,
+			this->headlights == HeadlightState::off ? 0 : this->headlights == HeadlightState::full ? 255 : HEADLIGHTS_DIM, LedFunction::headlight);
 	}
-
-	if (this->controlState != ControlState::gay && this->ringState == RingState::off) {
-		this->leds->setColor(0x0, 0x0, LedFunction::ringLight);
-	} else if ((this->ringState == RingState::rainbow || this->controlState == ControlState::gay) && this->rainbowTimer >= 16e-3) {
-		if (this->firstPixelHue >= 5*65536)
-			this->firstPixelHue = 0;
-
-		LedFunction lfunc = this->controlState == ControlState::gay ? LedFunction::all : LedFunction::ringLight;
-
-		size_t ringSize = this->leds->getSizeParam(lfunc);
-		size_t i=0;
-		for (LedProvider::Iterator it = this->leds->begin(lfunc); it != this->leds->end(lfunc); ++it) {
-			int pixelHue = this->firstPixelHue + (i * 65536L / ringSize);
-			this->leds->setColorRaw(*it, NeoPixelConnect::ColorHSV(pixelHue), RING_BRIGHTNESS);
-			i++;
-		}
-		this->firstPixelHue += 256;
-		this->rainbowTimer = 0;
-	}
-	this->rainbowTimer += dt;
-
 
 	this->leds->display();
 }

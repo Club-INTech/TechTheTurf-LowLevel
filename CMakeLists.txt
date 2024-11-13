@@ -45,7 +45,8 @@ endif()
 # Shared library to all pico FW
 add_library(ll_common INTERFACE)
 pico_generate_pio_header(ll_common ${CMAKE_CURRENT_LIST_DIR}/pio/ws2812.pio)
-target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/neopixel_connect.cpp")
+target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/neopixel_connect.cpp"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/led_provider.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ws281x_provider.cpp")
 
 # Linked libs
 target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_multicore pico_sync hardware_i2c hardware_pio hardware_dma)

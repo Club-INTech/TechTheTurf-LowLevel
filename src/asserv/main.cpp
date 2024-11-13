@@ -16,6 +16,7 @@
 #include <asserv/driver_odrive.hpp>
 
 #include <shared/robot.hpp>
+#include <shared/ws281x_provider.hpp>
 
 void comm_thread() {
 	// Grab the ref from the other core
@@ -134,18 +135,12 @@ int main() {
 	strip->setLedParams(4, LedFunction::headlight, LedPosition::left | LedPosition::front);
 
 	strip->setLedParamsRange(8, WS2812B_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
+	strip->setLedParamsRange(8, 10, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::right);
+	strip->setLedParamsRange(WS2812B_COUNT-1-2, WS2812B_COUNT-1, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::left);
 
 	strip->setLedOrderRange(0, 7, false); // RGB on WS2811
 	strip->setLedOrderRange(8, WS2812B_COUNT-1, true); // GRB on WS2812B (default, but still put)
 #endif
-
-	//for (int i=0;i<strip->getSize();i++) {
-	//	strip->setColorRaw(i, 0xF00000);
-	//}
-	//strip->setColorRaw(0, 0xF00000);
-	//strip->display();
-
-	//while (true);
 	Effects *effects = new Effects(cl, strip, STOP_LIGHT_CENTER_PIN);
 #endif
 

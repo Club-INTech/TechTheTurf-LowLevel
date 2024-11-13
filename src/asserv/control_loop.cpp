@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <math.h>
+#include <cmath> 
 #include <asserv/control_loop.hpp>
 
 ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
@@ -31,6 +31,7 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLef
 	this->lastCountRight = 0;
 	this->lSpeedTarget = 0;
 	this->rSpeedTarget = 0;
+	this->absSpeed = 0;
 	this->running = false;
 
 	this->lastDt = 0;
@@ -77,6 +78,7 @@ void ControlLoop::stop() {
 		return;
 	mutex_try_enter(&this->mutex, nullptr);
 	this->running = false;
+	this->absSpeed = 0;
 	this->ctrl->reset(); // State to reachedTarget
 	this->drvLeft->setPwm(0.0f);
 	this->drvRight->setPwm(0.0f);
@@ -96,15 +98,12 @@ void ControlLoop::estop() {
 void ControlLoop::work() {
 	static uint32_t counter = 0;
 
-	if (!this->running)
-		return;
+	// get speed when not running for effects.
 
 	// Calculate Delta time & update last time
 	absolute_time_t time = get_absolute_time();
 	float dt = ((float)absolute_time_diff_us(this->lastTime, time))/((float)1e6);
 	this->lastTime = time;
-
-	ctrl->work(dt);
 
 	// Get encoders counts
 	int32_t lCnt = this->encLeft->getCount();
@@ -121,9 +120,16 @@ void ControlLoop::work() {
 	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
 	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
 
+	this->absSpeed = (std::fabs(lCurrentSpeed) + std::fabs(rCurrentSpeed))/2.0f;
+
 	// Update last counts
 	this->lastCountLeft = lCnt;
 	this->lastCountRight = rCnt;
+
+	if (!this->running)
+		return;
+
+	ctrl->work(dt);
 
 	// Update odometry
 	this->odo->update(lDetaDst, rDetaDst);

@@ -43,6 +43,7 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 	// Floats need to be aligned, can't just cast
 	float f1, f2, f3, f4;
 	int32_t is1, is2;
+	uint32_t iu1;
 	TelemetryBase* telem;
 	PID *pid;
 
@@ -188,6 +189,10 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				this->effects->setCenterStop(data[4]);
 				this->effects->setHeadlights((HeadlightState)data[5]);
 				this->effects->setRing((RingState)data[6]);
+			} else if (subcmd == 8) { // RGB debug
+				memcpy(&iu1, &data[1], sizeof(uint32_t));
+				this->effects->setControlState(ControlState::off);
+				this->effects->leds->setColor(iu1, data[5]);
 			}
 			break;
 		default:
