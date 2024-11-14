@@ -22,7 +22,6 @@
 #include <stdlib.h>
 
 #include <hardware/pio.h>
-#include <hardware/dma.h>
 #include <hardware/clocks.h>
 #include <hardware/gpio.h>
 

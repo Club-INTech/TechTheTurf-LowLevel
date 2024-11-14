@@ -31,7 +31,8 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLef
 	this->lastCountRight = 0;
 	this->lSpeedTarget = 0;
 	this->rSpeedTarget = 0;
-	this->absSpeed = 0;
+	this->lCurrentSpeed = 0;
+	this->rCurrentSpeed = 0;
 	this->running = false;
 
 	this->lastDt = 0;
@@ -78,7 +79,8 @@ void ControlLoop::stop() {
 		return;
 	mutex_try_enter(&this->mutex, nullptr);
 	this->running = false;
-	this->absSpeed = 0;
+	this->lCurrentSpeed = 0;
+	this->rCurrentSpeed = 0;
 	this->ctrl->reset(); // State to reachedTarget
 	this->drvLeft->setPwm(0.0f);
 	this->drvRight->setPwm(0.0f);
@@ -117,10 +119,8 @@ void ControlLoop::work() {
 	this->rPll->update(rCnt - this->lastCountRight, dt);
 
 	// Estimate current speed
-	float lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
-	float rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
-
-	this->absSpeed = (std::fabs(lCurrentSpeed) + std::fabs(rCurrentSpeed))/2.0f;
+	this->lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
+	this->rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
 
 	// Update last counts
 	this->lastCountLeft = lCnt;

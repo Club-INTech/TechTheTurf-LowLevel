@@ -3,6 +3,7 @@
 #include <hardware/gpio.h>
 #include <hardware/clocks.h>
 #include <asserv/speed_profile.hpp>
+#include <pico/rand.h>
 #include <hardware/pwm.h>
 #include <asserv/controller.hpp>
 #include <asserv/effects.hpp>
@@ -37,6 +38,7 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin) {
 	this->blinkers = BlinkerState::off;
 	this->headlights = HeadlightState::off;
 	this->ringState = RingState::off;
+	this->ringDisco = false;
 	this->stopping = false;
 	this->stopCenter = false;
 
@@ -46,6 +48,7 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin) {
 	this->chaseOffset = 0;
 	this->wiperState = 0;
 
+	this->discoTimer = 0;
 	this->centerTimer = 0;
 	this->fancyBlinkerTimer = 0;
 	this->blinkerTimer = 0;
@@ -97,7 +100,9 @@ void Effects::work() {
 	// Apply effects from states
 
 	// Ring effects
-	float rainbowPeriod = this->ringState == RingState::speed ? std::clamp(1.0f/this->cl->absSpeed, 4e-3f, 32e-3f) : 16e-3f;
+	float speedDir = std::signbit(this->cl->rCurrentSpeed) ? -1.0f : 1.0f;
+	float speed = (std::fabs(this->cl->lCurrentSpeed) + std::fabs(this->cl->rCurrentSpeed))/2.0f;
+	float rainbowPeriod = this->ringState == RingState::speed ? std::clamp(1.0f/speed, 4e-3f, 32e-3f) : 16e-3f;
 
 	if (this->controlState != ControlState::gay && this->ringState == RingState::off) {
 		// Turn off the ring
@@ -116,7 +121,7 @@ void Effects::work() {
 			this->leds->setColorRaw(idx, NeoPixelConnect::ColorHSV(pixelHue), this->controlState == ControlState::gay ? RING_BRIGHTNESS : RING_BRIGHTNESS_DIM);
 			i++;
 		}
-		this->firstPixelHue += 256;
+		this->firstPixelHue += this->ringState == RingState::speed ? 256*speedDir : 256;
 		this->rainbowTimer = 0;
 	} else if (this->ringState == RingState::chase && this->rainbowTimer >= rainbowPeriod) {
 		// Chase mode
@@ -157,9 +162,10 @@ void Effects::work() {
 		// Fancy blinkers animation...
 		float period = (this->blinkers == BlinkerState::estop ? BLINKER_PERIOD/2.0f : BLINKER_PERIOD);
 		size_t blinkerSize = this->leds->getSizeParam(LedFunction::fancyBlinker, LedPosition::right);
-		float blinkerProgress = std::clamp(this->blinkerTimer / period, 0.0f, 1.0f);
-		size_t blinkerCurrentPos = blinkerProgress * blinkerSize;
-		uint8_t blinkerBrightness = 255*(blinkerProgress - (((float)blinkerCurrentPos)/((float)blinkerSize)));
+		float blinkerProgress = std::clamp(this->blinkerTimer / (period*0.5f), 0.0f, 1.0f);
+		size_t blinkerCurrentPos = std::min(std::floor(blinkerProgress * ((float)blinkerSize)), (float)blinkerSize-1);
+		float maxLedProgress = (1.0f/((float)blinkerSize));
+		uint8_t blinkerBrightness = 255*((blinkerProgress - maxLedProgress*blinkerCurrentPos)/maxLedProgress);
 		if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::left) {
 			size_t idx = 0;
 			for (size_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::right)) {
@@ -230,6 +236,16 @@ void Effects::work() {
 
 		this->leds->setColor(this->headlights == HeadlightState::full ? HEADLIGHTS_RGB : HEADLIGHTS_DIM_RGB,
 			this->headlights == HeadlightState::off ? 0 : this->headlights == HeadlightState::full ? 255 : HEADLIGHTS_DIM, LedFunction::headlight);
+
+		if (this->ringDisco) {
+			if (this->discoTimer >= DISCO_TIME) {
+				RingState oldState = this->ringState;
+				while (this->ringState == oldState)
+					this->ringState = RingState((rand()%4)+1);
+				this->discoTimer = 0;
+			}
+			this->discoTimer += dt;
+		}
 	}
 
 	this->leds->display();

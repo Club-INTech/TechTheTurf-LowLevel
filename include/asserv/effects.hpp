@@ -4,7 +4,7 @@
 #include <asserv/control_loop.hpp>
 #include <shared/led_provider.hpp>
 
-#define BLINKER_PERIOD 0.25f
+#define BLINKER_PERIOD 0.30f
 #define CENTER_PERIOD 0.15f
 
 #define CENTER_DIM 20
@@ -24,6 +24,8 @@
 #define INTECH_BLUE 0x005A9F
 #define INTECH_LIGHT_BLUE 0x99A7CF
 #define INTECH_YELLOW 0xFBCD00
+
+#define DISCO_TIME 5
 
 enum class ControlState {
 	off = 0,
@@ -69,12 +71,14 @@ public:
 	void setRing(RingState state) {this->ringState = state;}
 	void setStop(bool en) {this->stopping = en;}
 	void setCenterStop(bool en) {this->stopCenter = en;}
+	void setDisco(bool dis) {this->ringDisco = dis;}
 	void setHeadlights(HeadlightState state) {this->headlights = state;}
 
 	ControlState getControlState() {return this->controlState;}
 	BlinkerState getBlinker() {return this->blinkers;}
 	HeadlightState getHeadlights() {return this->headlights;}
 	RingState getRingState() {return this->ringState;}
+	bool getDisco() {return this->ringDisco;}
 	bool getStop() {return this->stopping;}
 	bool getCenterStop() {return this->stopCenter;}
 
@@ -95,9 +99,11 @@ private:
 	BlinkerState blinkers;
 	HeadlightState headlights;
 	RingState ringState;
+	bool ringDisco;
 	bool stopping;
 	bool stopCenter;
 
+	float discoTimer;
 	float blinkerTimer;
 	float fancyBlinkerTimer;
 	float centerTimer;

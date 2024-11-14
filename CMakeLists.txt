@@ -49,7 +49,7 @@ target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.
                                     "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/led_provider.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ws281x_provider.cpp")
 
 # Linked libs
-target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_multicore pico_sync hardware_i2c hardware_pio hardware_dma)
+target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio)
 
 # Shared library to all pico asserv FW
 add_library(ll_common_asserv INTERFACE)

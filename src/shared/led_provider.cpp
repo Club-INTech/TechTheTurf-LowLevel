@@ -41,9 +41,8 @@ LedRange LedProvider::range(LedFunction fMask, LedPosition pMask, bool specific)
 
 size_t LedProvider::getSizeParam(LedFunction fMask, LedPosition pMask, bool specific) {
 	size_t count = 0;
-	for (size_t __attribute__((unused)) idx : range(fMask, pMask, specific)) {
+	for (size_t __attribute__((unused)) idx : range(fMask, pMask, specific))
 		count++;
-	}
 	return count;
 }
 

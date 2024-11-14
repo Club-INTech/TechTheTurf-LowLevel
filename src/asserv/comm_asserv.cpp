@@ -189,6 +189,7 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				this->effects->setCenterStop(data[4]);
 				this->effects->setHeadlights((HeadlightState)data[5]);
 				this->effects->setRing((RingState)data[6]);
+				this->effects->setDisco(data[7]);
 			} else if (subcmd == 8) { // RGB debug
 				memcpy(&iu1, &data[1], sizeof(uint32_t));
 				this->effects->setControlState(ControlState::off);

@@ -34,7 +34,8 @@ public:
 	float lSpeedTarget;
 	float rSpeedTarget;
 
-	float absSpeed;
+	float lCurrentSpeed;
+	float rCurrentSpeed;
 	
 	absolute_time_t lastTime;
 	absolute_time_t lastTimePos;
