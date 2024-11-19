@@ -1,3 +1,4 @@
+#include "shared/led_provider.hpp"
 #include "shared/neopixel_connect.h"
 #include <algorithm>
 #include <hardware/gpio.h>
@@ -41,6 +42,7 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin) {
 	this->ringDisco = false;
 	this->stopping = false;
 	this->stopCenter = false;
+	this->reversing = false;
 
 	this->leds->setColor(0x0);
 	this->leds->display();
@@ -72,10 +74,11 @@ void Effects::work() {
 
 	// Generate light controls from state when in automatic
 	if (this->controlState == ControlState::automatic) {
+		Target dl = this->cl->ctrl->getDeltaTarget();
+
 		if (this->cl->running && this->cl->ctrl->isEstopped()) {
 			this->blinkers = BlinkerState::estop;
 		} else if (this->cl->running && this->cl->ctrl->getState() == ControllerState::reachingTheta) {
-			Target dl = this->cl->ctrl->getDeltaTarget();
 			float dth = dl.theta;
 			if (std::abs(dth) >= 0.2f) {
 				if (dth > 0)
@@ -91,6 +94,9 @@ void Effects::work() {
 		bool braking = ((cState == ControllerState::reachingDst && this->cl->ctrl->spDst->getState() == SpeedProfileState::decelerate) || 
 						(cState == ControllerState::reachingTheta && this->cl->ctrl->spAngle->getState() == SpeedProfileState::decelerate) /*|| cState == ControllerState::reachedTarget*/);
 
+		bool reversing = dl.dst < 0 && cState == ControllerState::reachingDst;
+
+		this->reversing = this->cl->running && reversing;
 		this->stopping = this->cl->running && braking;
 		this->headlights = HeadlightState::off;
 
@@ -154,6 +160,19 @@ void Effects::work() {
 			this->wiperState = (this->wiperState+1)%2;
 		}
 		this->rainbowTimer = 0;
+	} else if (this->ringState == RingState::police) {
+		// Police mode
+		size_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		size_t i = 0;
+		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
+			if (i >= ringSize/2)
+				this->leds->setColorRaw(idx, 0x0000FF, this->rainbowTimer >= ? RING_BRIGHTNESS);
+			else
+				this->leds->setColorRaw(idx, 0xFF0000, RING_BRIGHTNESS);
+			i++;
+		}
+		if (this->rainbowTimer >= rainbowPeriod)
+			this->rainbowTimer = 0;
 	}
 	this->rainbowTimer += dt;
 
@@ -216,6 +235,9 @@ void Effects::work() {
 				break;
 		}
 
+		if (!this->reversing)
+			this->leds->setColor(0xFFFFFF, 0, LedFunction::reverseLight);
+
 		// Stop lights
 		if (this->stopping) {
 			this->leds->setColor(BRAKE_RGB, 255, LedFunction::brakeLight, LedPosition::rear);
@@ -246,6 +268,9 @@ void Effects::work() {
 			}
 			this->discoTimer += dt;
 		}
+
+		if (this->reversing)
+			this->leds->setColor(0xFFFFFF, REVERSE_LIGHT_BRIGHTNESS, LedFunction::reverseLight);
 	}
 
 	this->leds->display();

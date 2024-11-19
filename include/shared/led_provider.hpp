@@ -4,16 +4,17 @@
 #include <cstdint>
 #include <vector>
 
-enum class LedFunction : uint8_t {
-	all = 0xFF,
-	left = 0x1,
-	blinker = 0x2,
-	brakeLight = 0x4,
-	signalLight = 0x8,
-	headlight = 0x10,
-	ringLight = 0x20,
-	neonLight = 0x40,
-	fancyBlinker = 0x80
+enum class LedFunction : uint16_t {
+	all = 0xFFFF,
+	left = 1<<1,
+	blinker = 1<<2,
+	brakeLight = 1<<3,
+	signalLight = 1<<4,
+	headlight = 1<<5,
+	ringLight = 1<<6,
+	neonLight = 1<<7,
+	fancyBlinker = 1<<8,
+	reverseLight = 1<<9,
 };
 
 enum class LedPosition : uint8_t {

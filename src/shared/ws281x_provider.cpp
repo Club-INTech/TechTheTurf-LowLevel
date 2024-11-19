@@ -9,7 +9,6 @@ size_t WS281XProvider::getSize() {
 	return this->size;
 }
 
-
 void WS281XProvider::setColorRaw(size_t idx, uint32_t rgb, uint8_t brightness) {
 	if (idx >= this->size)
 		return;

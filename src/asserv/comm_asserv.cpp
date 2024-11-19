@@ -183,13 +183,14 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			else if (subcmd == 7) { // Effects
 				if (!this->effects)
 					break;
-				this->effects->setControlState((ControlState)data[1]);
-				this->effects->setBlinker((BlinkerState)data[2]);
-				this->effects->setStop(data[3]);
-				this->effects->setCenterStop(data[4]);
-				this->effects->setHeadlights((HeadlightState)data[5]);
-				this->effects->setRing((RingState)data[6]);
-				this->effects->setDisco(data[7]);
+				this->effects->setControlState((ControlState)data[2]);
+				this->effects->setBlinker((BlinkerState)data[3]);
+				this->effects->setStop(data[1]&0x1);
+				this->effects->setCenterStop((data[1]>>1)&0x1);
+				this->effects->setHeadlights((HeadlightState)data[4]);
+				this->effects->setRing((RingState)data[5]);
+				this->effects->setDisco((data[1]>>2)&0x1);
+				this->effects->setReversing((data[1]>>3)&0x1);
 			} else if (subcmd == 8) { // RGB debug
 				memcpy(&iu1, &data[1], sizeof(uint32_t));
 				this->effects->setControlState(ControlState::off);

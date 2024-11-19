@@ -128,7 +128,7 @@ int main() {
 	strip->setLedParams(2, LedFunction::blinker, LedPosition::left | LedPosition::rear);
 	strip->setLedParams(5, LedFunction::blinker, LedPosition::left | LedPosition::front);
 
-	strip->setLedParams(1, LedFunction::brakeLight, LedPosition::right | LedPosition::rear);
+	strip->setLedParams(1, LedFunction::brakeLight | LedFunction::reverseLight, LedPosition::right | LedPosition::rear);
 	strip->setLedParams(3, LedFunction::brakeLight, LedPosition::left | LedPosition::rear);
 
 	strip->setLedParams(6, LedFunction::headlight, LedPosition::right | LedPosition::front);

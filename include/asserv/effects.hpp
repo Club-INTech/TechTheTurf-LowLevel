@@ -13,7 +13,7 @@
 #define BRAKE_RGB 0xFF0000
 
 #define HEADLIGHTS_DIM 30
-#define HEADLIGHTS_DIM_RGB 0xFFFF30
+#define HEADLIGHTS_DIM_RGB 0xFFFF69
 #define HEADLIGHTS_RGB 0xA6D3F5
 
 #define RING_BRIGHTNESS 150
@@ -24,6 +24,8 @@
 #define INTECH_BLUE 0x005A9F
 #define INTECH_LIGHT_BLUE 0x99A7CF
 #define INTECH_YELLOW 0xFBCD00
+
+#define REVERSE_LIGHT_BRIGHTNESS 60
 
 #define DISCO_TIME 5
 
@@ -53,7 +55,8 @@ enum class RingState {
 	rainbow,
 	speed,
 	chase,
-	wiper
+	wiper,
+	police
 };
 
 class Effects
@@ -73,6 +76,7 @@ public:
 	void setCenterStop(bool en) {this->stopCenter = en;}
 	void setDisco(bool dis) {this->ringDisco = dis;}
 	void setHeadlights(HeadlightState state) {this->headlights = state;}
+	void setReversing(bool rev) {this->reversing = rev;}
 
 	ControlState getControlState() {return this->controlState;}
 	BlinkerState getBlinker() {return this->blinkers;}
@@ -81,6 +85,7 @@ public:
 	bool getDisco() {return this->ringDisco;}
 	bool getStop() {return this->stopping;}
 	bool getCenterStop() {return this->stopCenter;}
+	bool getReversing() {return this->reversing;}
 
 	// Handle all the stuff
 	void work();
@@ -99,9 +104,10 @@ private:
 	BlinkerState blinkers;
 	HeadlightState headlights;
 	RingState ringState;
-	bool ringDisco;
 	bool stopping;
 	bool stopCenter;
+	bool reversing;
+	bool ringDisco;
 
 	float discoTimer;
 	float blinkerTimer;
