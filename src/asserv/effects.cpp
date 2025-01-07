@@ -1,5 +1,6 @@
-#include "shared/led_provider.hpp"
-#include "shared/neopixel_connect.h"
+#include <cstring>
+#include <shared/led_provider.hpp>
+#include <shared/neopixel_connect.h>
 #include <algorithm>
 #include <hardware/gpio.h>
 #include <hardware/clocks.h>
@@ -12,11 +13,7 @@
 #include <cstdint>
 #include <hardware/timer.h>
 
-Effects::Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin) {
-	this->cl = cl;
-	this->center_brake_pin = center_brake_pin;
-	this->leds = prov;
-
+Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, uint8_t center_brake_pin) : leds(prov), piezo(piezo), cl(cl), center_brake_pin(center_brake_pin) {
 	gpio_set_function(center_brake_pin, GPIO_FUNC_PWM);
 
 	uint cbslice = pwm_gpio_to_slice_num(center_brake_pin);
@@ -43,12 +40,15 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin) {
 	this->stopping = false;
 	this->stopCenter = false;
 	this->reversing = false;
+	this->smoking = false;
 
 	this->leds->setColor(0x0);
 	this->leds->display();
 	this->firstPixelHue = 0;
 	this->chaseOffset = 0;
 	this->wiperState = 0;
+	this->smokeIdx = 0;
+	this->smokeLen = std::strlen(PIEZO_FIRE_STR);
 
 	this->discoTimer = 0;
 	this->centerTimer = 0;
@@ -101,6 +101,7 @@ void Effects::work() {
 		this->headlights = HeadlightState::off;
 
 		this->stopCenter = this->cl->running;
+		this->smoking = this->cl->running && cState == ControllerState::reachedTarget;
 	}
 
 	// Apply effects from states
@@ -109,6 +110,21 @@ void Effects::work() {
 	float speedDir = std::signbit(this->cl->rCurrentSpeed) ? -1.0f : 1.0f;
 	float speed = (std::fabs(this->cl->lCurrentSpeed) + std::fabs(this->cl->rCurrentSpeed))/2.0f;
 	float rainbowPeriod = this->ringState == RingState::speed ? std::clamp(1.0f/speed, 4e-3f, 32e-3f) : 16e-3f;
+
+	bool enablePiezo = this->controlState == ControlState::gay ? true : this->smoking;
+	this->piezo->setEnable(enablePiezo);
+	if (this->controlState != ControlState::gay) {
+		this->smokeTimer += dt;
+		size_t newIdx = (this->smokeIdx + 1) % this->smokeLen;
+		float percentage = this->smokeTimer/PIEZO_FIRE_PERIOD;
+		float lightval = float(convertLight(PIEZO_FIRE_STR[this->smokeIdx]))*(1.0f-percentage) + float(convertLight(PIEZO_FIRE_STR[newIdx]))*percentage;
+		//uint8_t lightval = convertLight(PIEZO_FIRE_STR[this->smokeIdx]);
+		this->leds->setColor(PIEZO_FIRE_LED, enablePiezo ? std::min(int(PIEZO_FIRE_BRIGHT*(1+(lightval-1.0f)/PIEZO_FIRE_DIV)),255) : 0, LedFunction::smokeLight);
+		if (this->smokeTimer >= PIEZO_FIRE_PERIOD) {
+			this->smokeIdx = newIdx;
+			this->smokeTimer = 0;
+		}
+	}
 
 	if (this->controlState != ControlState::gay && this->ringState == RingState::off) {
 		// Turn off the ring
@@ -166,7 +182,7 @@ void Effects::work() {
 		size_t i = 0;
 		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
 			if (i >= ringSize/2)
-				this->leds->setColorRaw(idx, 0x0000FF, this->rainbowTimer >= ? RING_BRIGHTNESS);
+				this->leds->setColorRaw(idx, 0x0000FF, RING_BRIGHTNESS);
 			else
 				this->leds->setColorRaw(idx, 0xFF0000, RING_BRIGHTNESS);
 			i++;

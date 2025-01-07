@@ -107,6 +107,9 @@ void ControlLoop::work() {
 	float dt = ((float)absolute_time_diff_us(this->lastTime, time))/((float)1e6);
 	this->lastTime = time;
 
+	this->encLeft->update();
+	this->encRight->update();
+
 	// Get encoders counts
 	int32_t lCnt = this->encLeft->getCount();
 	int32_t rCnt = this->encRight->getCount();
@@ -115,12 +118,12 @@ void ControlLoop::work() {
 	float lDetaDst = this->encLeft->convertRevolutions(lCnt - this->lastCountLeft) * 2.0f * M_PI * this->encoderWheelRadius;
 	float rDetaDst = this->encRight->convertRevolutions(rCnt - this->lastCountRight) * 2.0f * M_PI * this->encoderWheelRadius;
 
-	this->lPll->update(lCnt - this->lastCountLeft, dt);
-	this->rPll->update(rCnt - this->lastCountRight, dt);
+	//this->lPll->update(lCnt - this->lastCountLeft, dt);
+	//this->rPll->update(rCnt - this->lastCountRight, dt);
 
 	// Estimate current speed
-	this->lCurrentSpeed = this->encLeft->convertRevolutions(this->lPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
-	this->rCurrentSpeed = this->encRight->convertRevolutions(this->rPll->speed) * 2.0f * M_PI * this->encoderWheelRadius;
+	this->lCurrentSpeed = this->encLeft->getSpeedRev() * 2.0f * M_PI * this->encoderWheelRadius;
+	this->rCurrentSpeed = this->encRight->getSpeedRev() * 2.0f * M_PI * this->encoderWheelRadius;
 
 	// Update last counts
 	this->lastCountLeft = lCnt;

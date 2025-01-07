@@ -1,4 +1,5 @@
 #include "asserv/effects.hpp"
+#include <hardware/pwm.h>
 #include <stdio.h>
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
@@ -17,6 +18,7 @@
 
 #include <shared/robot.hpp>
 #include <shared/ws281x_provider.hpp>
+#include <shared/piezo.hpp>
 
 void comm_thread() {
 	// Grab the ref from the other core
@@ -134,14 +136,19 @@ int main() {
 	strip->setLedParams(6, LedFunction::headlight, LedPosition::right | LedPosition::front);
 	strip->setLedParams(4, LedFunction::headlight, LedPosition::left | LedPosition::front);
 
-	strip->setLedParamsRange(8, WS2812B_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
-	strip->setLedParamsRange(8, 10, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::right);
+	strip->setLedParams(8, LedFunction::smokeLight, LedPosition::rear | LedPosition::center);
+
+	strip->setLedParamsRange(9, WS2812B_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
+
+	strip->setLedParamsRange(9, 11, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::right);
 	strip->setLedParamsRange(WS2812B_COUNT-1-2, WS2812B_COUNT-1, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::left);
 
-	strip->setLedOrderRange(0, 7, false); // RGB on WS2811
-	strip->setLedOrderRange(8, WS2812B_COUNT-1, true); // GRB on WS2812B (default, but still put)
+	strip->setLedOrderRange(0, 8, false); // RGB on WS2811
+	strip->setLedOrderRange(9, WS2812B_COUNT-1, true); // GRB on WS2812B (default, but still put)
 #endif
-	Effects *effects = new Effects(cl, strip, STOP_LIGHT_CENTER_PIN);
+	Piezo *piezo = new Piezo(PIEZO_PIN, 121e3);
+
+	Effects *effects = new Effects(cl, strip, piezo, STOP_LIGHT_CENTER_PIN);
 #endif
 
 	// Init motor control

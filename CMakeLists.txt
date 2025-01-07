@@ -46,10 +46,11 @@ endif()
 add_library(ll_common INTERFACE)
 pico_generate_pio_header(ll_common ${CMAKE_CURRENT_LIST_DIR}/pio/ws2812.pio)
 target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/neopixel_connect.cpp"
-                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/led_provider.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ws281x_provider.cpp")
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/led_provider.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ws281x_provider.cpp"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/piezo.cpp")
 
 # Linked libs
-target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio)
+target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio hardware_pwm)
 
 # Shared library to all pico asserv FW
 add_library(ll_common_asserv INTERFACE)
@@ -60,10 +61,10 @@ target_sources(ll_common_asserv INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asser
                             "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/speed_profile.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/effects.cpp")
 
 # Linked Libs
-target_link_libraries(ll_common_asserv INTERFACE ll_common hardware_pwm hardware_pio)
+target_link_libraries(ll_common_asserv INTERFACE ll_common hardware_pio)
 
 # PIO header gen.
-pico_generate_pio_header(ll_common_asserv ${CMAKE_CURRENT_LIST_DIR}/pio/quadrature_encoder.pio)
+pico_generate_pio_header(ll_common_asserv ${CMAKE_CURRENT_LIST_DIR}/pio/quadrature_encoder_substep.pio)
 
 # Shared library to all pico asserv FW
 add_library(dynamixel_sdk INTERFACE)

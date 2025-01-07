@@ -191,6 +191,7 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				this->effects->setRing((RingState)data[5]);
 				this->effects->setDisco((data[1]>>2)&0x1);
 				this->effects->setReversing((data[1]>>3)&0x1);
+				this->effects->setSmoking((data[1]>>4)&0x1);
 			} else if (subcmd == 8) { // RGB debug
 				memcpy(&iu1, &data[1], sizeof(uint32_t));
 				this->effects->setControlState(ControlState::off);

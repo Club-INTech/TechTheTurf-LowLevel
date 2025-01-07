@@ -3,6 +3,7 @@
 #include "action/dynamixel_xl430.hpp"
 #include <asserv/control_loop.hpp>
 #include <shared/led_provider.hpp>
+#include <shared/piezo.hpp>
 
 #define BLINKER_PERIOD 0.30f
 #define CENTER_PERIOD 0.15f
@@ -24,6 +25,12 @@
 #define INTECH_BLUE 0x005A9F
 #define INTECH_LIGHT_BLUE 0x99A7CF
 #define INTECH_YELLOW 0xFBCD00
+
+#define PIEZO_FIRE_LED 0xFF2000
+#define PIEZO_FIRE_STR "fuckminetlesgrosconnards"
+#define PIEZO_FIRE_PERIOD 0.05f
+#define PIEZO_FIRE_DIV 4.0f
+#define PIEZO_FIRE_BRIGHT 150
 
 #define REVERSE_LIGHT_BRIGHTNESS 60
 
@@ -59,10 +66,14 @@ enum class RingState {
 	police
 };
 
+static inline float convertLight(char val) {
+	return ((val - 'a') * 21.25f)/255.0f;
+}
+
 class Effects
 {
 public:
-	Effects(ControlLoop *cl, LedProvider* prov, uint8_t center_brake_pin);
+	Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, uint8_t center_brake_pin);
 	~Effects();
 
 	void setControlState(ControlState state) {
@@ -77,6 +88,7 @@ public:
 	void setDisco(bool dis) {this->ringDisco = dis;}
 	void setHeadlights(HeadlightState state) {this->headlights = state;}
 	void setReversing(bool rev) {this->reversing = rev;}
+	void setSmoking(bool smoking) {this->smoking = smoking;}
 
 	ControlState getControlState() {return this->controlState;}
 	BlinkerState getBlinker() {return this->blinkers;}
@@ -86,11 +98,13 @@ public:
 	bool getStop() {return this->stopping;}
 	bool getCenterStop() {return this->stopCenter;}
 	bool getReversing() {return this->reversing;}
+	bool getSmoking() {return this->smoking;}
 
 	// Handle all the stuff
 	void work();
 
 	LedProvider *leds;
+	Piezo *piezo;
 private:
 	ControlLoop *cl;
 	uint8_t center_brake_pin;
@@ -99,6 +113,8 @@ private:
 	long firstPixelHue;
 	size_t chaseOffset;
 	size_t wiperState;
+	size_t smokeIdx;
+	size_t smokeLen;
 
 	ControlState controlState;
 	BlinkerState blinkers;
@@ -108,10 +124,12 @@ private:
 	bool stopCenter;
 	bool reversing;
 	bool ringDisco;
+	bool smoking;
 
 	float discoTimer;
 	float blinkerTimer;
 	float fancyBlinkerTimer;
 	float centerTimer;
 	float rainbowTimer;
+	float smokeTimer;
 };

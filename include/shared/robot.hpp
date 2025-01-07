@@ -83,6 +83,12 @@
 		// Limit Voltage on smaller motors
 		#define DRIVER_DUTY_CLAMP 1.0f
 	#else
+/*
+Pid(name='theta', idx=0, kp=2000.0, ki=200.0, kd=80.0)
+Pid(name='rho', idx=1, kp=25.0, ki=1.0, kd=0.8999999761581421)
+Pid(name='left_vel', idx=2, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689376e-05)
+Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689376e-05)
+*/
 		// Speed PID
 		#define SPEED_PID_KP 0.001f
 		#define SPEED_PID_KI 0.0f
@@ -139,7 +145,9 @@
 		#define STOP_LIGHT_CENTER_PIN 14
 
 		#define WS2812B_PIN 15
-		#define WS2812B_COUNT 47
+		#define WS2812B_COUNT 48
+
+		#define PIEZO_PIN 10
 	#endif
 
 	// Mech constants
