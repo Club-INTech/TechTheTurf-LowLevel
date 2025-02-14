@@ -111,6 +111,33 @@ void Comm::work() {
 	}
 }
 
+bool Comm::handleCmd(uint8_t *data, size_t size) {
+	uint8_t fbyte = data[0];
+
+	uint8_t cmd = fbyte&0xF;
+	uint8_t subcmd = (fbyte>>4)&0xF;
+	TelemetryBase* telem;
+
+	switch (cmd) {
+		case 6: // Telem CMD, ON sc=1/OFF sc=0, set downsampling sc=2
+			telem = getTelem(data[0]);
+			if (!telem)
+				break;
+
+			if (subcmd == 1)
+				telem->start();
+			else if (subcmd == 0)
+				telem->stop();
+			else if (subcmd == 2)
+				telem->setDownsample(data[1]);
+
+			break;
+		default:
+			return false;
+	}
+	return true;
+}
+
 void Comm::slaveHandler(i2c_slave_event_t event) {
 	size_t nb;
 	uint8_t byte;

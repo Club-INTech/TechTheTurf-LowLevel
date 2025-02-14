@@ -10,18 +10,19 @@ struct LedParams {
 
 class WS281XProvider : public LedProvider {
 public:
-	WS281XProvider(uint8_t ws_pin, size_t count);
-	size_t getSize();
+	WS281XProvider(uint8_t ws_pin, uint32_t count, PIO pio=pio1, uint8_t sm=0);
+	~WS281XProvider();
+	uint32_t getSize();
 
-	void setColorRaw(size_t idx, uint32_t rgb, uint8_t brightness);
+	void setColorRaw(uint32_t idx, uint32_t rgb, uint8_t brightness);
 
-	void setLedOrder(size_t idx, bool brg);
-	void setLedOrderRange(size_t from, size_t to, bool brg);
+	void setLedOrder(uint32_t idx, bool brg);
+	void setLedOrderRange(uint32_t from, uint32_t to, bool brg);
 
-	void setLedParams(size_t idx, LedFunction func, LedPosition pos);
+	void setLedParams(uint32_t idx, LedFunction func, LedPosition pos);
 
-	LedPosition getLedPosition(size_t idx);
-	LedFunction getLedFunction(size_t idx);
+	LedPosition getLedPosition(uint32_t idx);
+	LedFunction getLedFunction(uint32_t idx);
 
 	void clear();
 	void display();
@@ -51,7 +52,7 @@ private:
 		218,220,223,225,227,230,232,235,237,240,242,245,247,250,252,
 		255};
 
-	size_t size;
+	uint32_t size;
 	NeoPixelConnect pixels;
-	std::vector<LedParams> params;
+	LedParams* params;
 };

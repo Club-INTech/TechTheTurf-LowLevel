@@ -6,30 +6,14 @@
 #include <hardware/clocks.h>
 #include <asserv/speed_profile.hpp>
 #include <pico/rand.h>
-#include <hardware/pwm.h>
 #include <asserv/controller.hpp>
 #include <asserv/effects.hpp>
 #include <cmath>
 #include <cstdint>
 #include <hardware/timer.h>
 
-Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, uint8_t center_brake_pin) : leds(prov), piezo(piezo), cl(cl), center_brake_pin(center_brake_pin) {
-	gpio_set_function(center_brake_pin, GPIO_FUNC_PWM);
-
-	uint cbslice = pwm_gpio_to_slice_num(center_brake_pin);
-
-	float freq = 40e3;
-	uint resolution = 256;
-	float div = (float)clock_get_hz(clk_sys) / (freq*resolution);
-	pwm_set_wrap(cbslice, resolution-1);
-	pwm_set_clkdiv(cbslice, div);
-	pwm_set_enabled(cbslice, true);
-
-	pwm_set_chan_level(cbslice, pwm_gpio_to_channel(this->center_brake_pin), 0);
-	pwm_set_both_levels(cbslice, 0, 0);
-
-	gpio_set_drive_strength(center_brake_pin, GPIO_DRIVE_STRENGTH_12MA);
-
+Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoiler, PopUp *popup)
+ : leds(prov), piezo(piezo), spoiler(spoiler), popup(popup), cl(cl)  {
 	this->lastTime = get_absolute_time();
 
 	this->controlState = ControlState::automatic;
@@ -58,7 +42,6 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, uint8_t cente
 }
 
 Effects::~Effects() {
-	gpio_deinit(this->center_brake_pin);
 }
 
 void Effects::work() {
@@ -115,7 +98,7 @@ void Effects::work() {
 	this->piezo->setEnable(enablePiezo);
 	if (this->controlState != ControlState::gay) {
 		this->smokeTimer += dt;
-		size_t newIdx = (this->smokeIdx + 1) % this->smokeLen;
+		uint32_t newIdx = (this->smokeIdx + 1) % this->smokeLen;
 		float percentage = this->smokeTimer/PIEZO_FIRE_PERIOD;
 		float lightval = float(convertLight(PIEZO_FIRE_STR[this->smokeIdx]))*(1.0f-percentage) + float(convertLight(PIEZO_FIRE_STR[newIdx]))*percentage;
 		//uint8_t lightval = convertLight(PIEZO_FIRE_STR[this->smokeIdx]);
@@ -125,6 +108,8 @@ void Effects::work() {
 			this->smokeTimer = 0;
 		}
 	}
+
+	this->popup->setOpen(this->headlights != HeadlightState::off || this->controlState == ControlState::gay);
 
 	if (this->controlState != ControlState::gay && this->ringState == RingState::off) {
 		// Turn off the ring
@@ -136,9 +121,9 @@ void Effects::work() {
 
 		LedFunction lfunc = this->controlState == ControlState::gay ? LedFunction::all : LedFunction::ringLight;
 
-		size_t ringSize = this->leds->getSizeParam(lfunc);
-		size_t i=0;
-		for (size_t idx : this->leds->range(lfunc)) {
+		uint32_t ringSize = this->leds->getSizeParam(lfunc);
+		uint32_t i=0;
+		for (uint32_t idx : this->leds->range(lfunc)) {
 			int pixelHue = this->firstPixelHue + (i * 65536L / ringSize);
 			this->leds->setColorRaw(idx, NeoPixelConnect::ColorHSV(pixelHue), this->controlState == ControlState::gay ? RING_BRIGHTNESS : RING_BRIGHTNESS_DIM);
 			i++;
@@ -147,9 +132,9 @@ void Effects::work() {
 		this->rainbowTimer = 0;
 	} else if (this->ringState == RingState::chase && this->rainbowTimer >= rainbowPeriod) {
 		// Chase mode
-		size_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
-		size_t i = 0;
-		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
+		uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		uint32_t i = 0;
+		for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
 			if (i == this->chaseOffset)
 				this->leds->setColorRaw(idx, INTECH_BLUE, RING_BRIGHTNESS);
 			else if (i == (this->chaseOffset + ringSize/2) % ringSize)
@@ -163,9 +148,9 @@ void Effects::work() {
 		this->rainbowTimer = 0;
 	} else if (this->ringState == RingState::wiper && this->rainbowTimer >= rainbowPeriod) {
 		// Wiper mode
-		size_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
-		size_t i = 0;
-		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
+		uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		uint32_t i = 0;
+		for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
 			if (i == this->chaseOffset)
 				this->leds->setColorRaw(idx, this->wiperState == 0 ? INTECH_BLUE : INTECH_YELLOW, RING_BRIGHTNESS);
 			i++;
@@ -178,9 +163,9 @@ void Effects::work() {
 		this->rainbowTimer = 0;
 	} else if (this->ringState == RingState::police) {
 		// Police mode
-		size_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
-		size_t i = 0;
-		for (size_t idx : this->leds->range(LedFunction::ringLight)) {
+		uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		uint32_t i = 0;
+		for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
 			if (i >= ringSize/2)
 				this->leds->setColorRaw(idx, 0x0000FF, RING_BRIGHTNESS);
 			else
@@ -196,22 +181,22 @@ void Effects::work() {
 	if (this->controlState != ControlState::gay) {
 		// Fancy blinkers animation...
 		float period = (this->blinkers == BlinkerState::estop ? BLINKER_PERIOD/2.0f : BLINKER_PERIOD);
-		size_t blinkerSize = this->leds->getSizeParam(LedFunction::fancyBlinker, LedPosition::right);
+		uint32_t blinkerSize = this->leds->getSizeParam(LedFunction::fancyBlinker, LedPosition::right);
 		float blinkerProgress = std::clamp(this->blinkerTimer / (period*0.5f), 0.0f, 1.0f);
-		size_t blinkerCurrentPos = std::min(std::floor(blinkerProgress * ((float)blinkerSize)), (float)blinkerSize-1);
+		uint32_t blinkerCurrentPos = std::min(std::floor(blinkerProgress * ((float)blinkerSize)), (float)blinkerSize-1);
 		float maxLedProgress = (1.0f/((float)blinkerSize));
 		uint8_t blinkerBrightness = 255*((blinkerProgress - maxLedProgress*blinkerCurrentPos)/maxLedProgress);
 		if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::left) {
-			size_t idx = 0;
-			for (size_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::right)) {
+			uint32_t idx = 0;
+			for (uint32_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::right)) {
 				this->leds->setColorRaw(pos, BLINKER_RGB, this->blinkerTimer <= period ? idx > blinkerCurrentPos ? 0 : idx == blinkerCurrentPos ? blinkerBrightness : 255 : 0);
 				idx++;
 			}
 		}
 		blinkerCurrentPos = blinkerSize-1-blinkerCurrentPos;
 		if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::right) {
-			size_t idx = 0;
-			for (size_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::left)) {
+			uint32_t idx = 0;
+			for (uint32_t pos : this->leds->range(LedFunction::fancyBlinker, LedPosition::left)) {
 				this->leds->setColorRaw(pos, BLINKER_RGB, this->blinkerTimer <= period ? idx < blinkerCurrentPos ? 0 : idx == blinkerCurrentPos ? blinkerBrightness : 255 : 0);
 				idx++;
 			}
@@ -257,17 +242,19 @@ void Effects::work() {
 		// Stop lights
 		if (this->stopping) {
 			this->leds->setColor(BRAKE_RGB, 255, LedFunction::brakeLight, LedPosition::rear);
-			pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 255);
+			//pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 255);
 		} else {
 			this->leds->setColor(BRAKE_RGB, this->headlights == HeadlightState::off ? 0 : BRAKE_DIM, LedFunction::brakeLight, LedPosition::rear);
 
 			if (this->stopCenter) {
-				pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), this->centerTimer <= CENTER_PERIOD/2.0f ? CENTER_DIM : 0);
+				this->leds->setColor(BRAKE_RGB, this->centerTimer <= CENTER_PERIOD/2.0f ? CENTER_DIM : 0, LedFunction::brakeLight, LedPosition::rear | LedPosition::center);
+				//pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), this->centerTimer <= CENTER_PERIOD/2.0f ? CENTER_DIM : 0);
 				this->centerTimer += dt;
 				if (this->centerTimer >= CENTER_PERIOD)
 					this->centerTimer = 0;
 			} else {
-				pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 0);
+				this->leds->setColor(BRAKE_RGB, 0, LedFunction::brakeLight, LedPosition::rear | LedPosition::center);
+				//pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 0);
 				this->centerTimer = 0;
 			}
 		}

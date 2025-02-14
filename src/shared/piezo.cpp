@@ -8,13 +8,12 @@ Piezo::Piezo(uint pin, float frequency) : pin(pin) {
 	this->slice = pwm_gpio_to_slice_num(pin);
 	this->chan = pwm_gpio_to_channel(pin);
 
-	gpio_set_function(pin, GPIO_FUNC_PWM);
-
 	pwm_set_wrap(this->slice, 7);
 	setEnable(false);
-	pwm_set_enabled(this->slice, true);
-
 	setFreq(frequency);
+
+	pwm_set_enabled(this->slice, true);
+	gpio_set_function(pin, GPIO_FUNC_PWM);
 }
 
 void Piezo::setFreq(float freq) {
@@ -28,6 +27,6 @@ void Piezo::setEnable(bool enable) {
 }
 
 Piezo::~Piezo() {
-	setEnable(false);
 	gpio_set_function(pin, GPIO_FUNC_NULL);
+	setEnable(false);
 }

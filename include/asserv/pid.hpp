@@ -13,6 +13,8 @@ struct PIDTelemData
 		this->input = input;
 		this->output = output;
 	}
+
+	static TelemetryPacketType type() {return TelemetryPacketType::PID;}
 };
 
 class PID
@@ -42,7 +44,7 @@ public:
 	float min,max;
 	float lpf,outRamp;
 
-	Telemetry<PIDTelemData,500> telem;
+	Telemetry<PIDTelemData> telem;
 private:
 
 	// Helper to clamp to PID min/max if exists

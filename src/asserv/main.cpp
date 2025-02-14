@@ -1,9 +1,7 @@
-#include "asserv/effects.hpp"
-#include <hardware/pwm.h>
-#include <stdio.h>
+#include <hardware/timer.h>
 #include <pico/stdlib.h>
+#include <cstdio>
 #include <pico/multicore.h>
-#include <math.h>
 
 #include <asserv/comm_asserv.hpp>
 #include <asserv/encoder.hpp>
@@ -15,10 +13,19 @@
 #include <asserv/comm_odrive.hpp>
 #include <asserv/driver_bg.hpp>
 #include <asserv/driver_odrive.hpp>
+#include <asserv/effects.hpp>
 
 #include <shared/robot.hpp>
+#include <shared/led_provider.hpp>
 #include <shared/ws281x_provider.hpp>
 #include <shared/piezo.hpp>
+#include <shared/servo.hpp>
+#include <shared/spoiler.hpp>
+#include <shared/popup.hpp>
+#include <shared/ina236.hpp>
+#if defined(ROBOT_PAMI) && defined(PAMINI)
+#include <Invn/icm42688.hpp>
+#endif
 
 void comm_thread() {
 	// Grab the ref from the other core
@@ -43,8 +50,12 @@ int main() {
 	// Set overclock
 	//set_sys_clock_khz(240000, true);
 
-	// Init PicoSDK
+	// Init PicoSDK stdio
+#if defined(ROBOT_PAMI) && defined(PAMINI)
+	stdio_uart_init_full(DEBUG_UART_INST, DEBUG_UART_BAUDRATE, DEBUG_UART_TXD, DEBUG_UART_RXD);
+#else
 	stdio_init_all();
+#endif
 
 	// Init Encoders
 	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, ENCODER_LEFT_REVERSE, 0);
@@ -71,6 +82,20 @@ int main() {
 	Driver *rDrv = new Driver(RIGHT_MOTOR_FW_PIN, RIGHT_MOTOR_RW_PIN, DRIVER_RIGHT_REVERSE);
 	lDrv->setDutyOffset(DRIVER_DUTY_OFFSET);
 	rDrv->setDutyOffset(DRIVER_DUTY_OFFSET);
+
+#ifdef PAMINI
+	//printf("Hello\n");
+	INA236 *curr = new INA236(ACCESSORY_I2C_INST, ACCESSORY_I2C_SDA, ACCESSORY_I2C_SCL, INA236_ADDR, INA236_SHUNT_RESISTOR, INA236_MAX_CURRENT, ACCESSORY_I2C_BAUDRATE);
+	//uint16_t mid = curr->readManufacturerID();
+	//uint16_t did = curr->readDeviceID();
+	//printf("%x %x\n", mid, did);
+	curr->setAveraging(INA236Avg::a16);
+	/*while (true) {
+		printf("%fV %fV %fA %fW\n", curr->readShuntVoltage(), curr->readBusVoltage(), curr->readCurrent(), curr->readPower());
+		busy_wait_us(32000);
+	}*/
+#endif
+
 #endif
 
 	// Init odometry
@@ -121,36 +146,79 @@ int main() {
 									ctrl, ENCODER_WHEEL_RADIUS, POSITION_DOWNSAMPLING);
 
 #ifdef ENABLE_EFFECTS
+	AggregateLedProvider *leds = new AggregateLedProvider();
+	Piezo *piezo = nullptr;
+	Spoiler *spoiler = nullptr;
+	PopUp *popup = nullptr;
 
-	WS281XProvider *strip = new WS281XProvider(WS2812B_PIN, WS2812B_COUNT);
+#ifdef PAMINI // Pamini
+	// Piezo setup
+	piezo = new Piezo(PIEZO_PIN, 121e3);
 
-#ifndef PAMINABLE // Pamini
-	strip->setLedParams(0, LedFunction::blinker, LedPosition::right | LedPosition::rear);
-	strip->setLedParams(7, LedFunction::blinker, LedPosition::right | LedPosition::front);
-	strip->setLedParams(2, LedFunction::blinker, LedPosition::left | LedPosition::rear);
-	strip->setLedParams(5, LedFunction::blinker, LedPosition::left | LedPosition::front);
+	// Spoiler setup
+	Servo *servoSpoilerShort = new Servo(SERVO_SPOILER_SHORT_PIN, 200.0f);
+	Servo *servoSpoilerLong = new Servo(SERVO_SPOILER_LONG_PIN, 200.0f);
 
-	strip->setLedParams(1, LedFunction::brakeLight | LedFunction::reverseLight, LedPosition::right | LedPosition::rear);
-	strip->setLedParams(3, LedFunction::brakeLight, LedPosition::left | LedPosition::rear);
+	SpeedProfile *spoilerHeightSp = new SpeedProfile(MAX_SPOILER_H_VEL, MAX_SPOILER_H_ACCEL);
+	SpeedProfile *spoilerAngleSp = new SpeedProfile(MAX_SPOILER_ANG_VEL, MAX_SPOILER_ANG_ACCEL);
 
-	strip->setLedParams(6, LedFunction::headlight, LedPosition::right | LedPosition::front);
-	strip->setLedParams(4, LedFunction::headlight, LedPosition::left | LedPosition::front);
+	spoiler = new Spoiler(servoSpoilerLong, servoSpoilerShort, spoilerHeightSp, spoilerAngleSp, SPOILER_L1, SPOILER_L2, SPOILER_L3, SPOILER_L4, SPOILER_START_H);
 
-	strip->setLedParams(8, LedFunction::smokeLight, LedPosition::rear | LedPosition::center);
+	// PopUp setup
+	Servo *servoPopLeft = new Servo(SERVO_POPUP_LEFT_PIN, 200.0f);
+	Servo *servoPopRight = new Servo(SERVO_POPUP_RIGHT_PIN, 200.0f);
 
-	strip->setLedParamsRange(9, WS2812B_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
+	popup = new PopUp(servoPopLeft, servoPopRight, POPUP_CLOSE_ANGLE, POPUP_OPEN_ANGLE, POPUP_RIGHT_OFFSET);
 
-	strip->setLedParamsRange(9, 11, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::right);
-	strip->setLedParamsRange(WS2812B_COUNT-1-2, WS2812B_COUNT-1, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::left);
+	// Leds setup
+	WS281XProvider *strip1 = new WS281XProvider(WS2812B1_PIN, WS2812B1_COUNT, pio1, 0);
 
-	strip->setLedOrderRange(0, 8, false); // RGB on WS2811
-	strip->setLedOrderRange(9, WS2812B_COUNT-1, true); // GRB on WS2812B (default, but still put)
+	strip1->setLedParams(1, LedFunction::blinker, LedPosition::right | LedPosition::front);
+	strip1->setLedParams(2, LedFunction::blinker, LedPosition::left | LedPosition::front);
+
+	strip1->setLedParams(0, LedFunction::headlight, LedPosition::right | LedPosition::front);
+	strip1->setLedParams(3, LedFunction::headlight, LedPosition::left | LedPosition::front);
+
+	strip1->setLedOrderRange(0, 3, false);  // RGB on WS2811 (singluar LEDs)
+
+	WS281XProvider *strip2 = new WS281XProvider(WS2812B2_PIN, WS2812B2_COUNT, pio1, 1);
+
+	/*strip2->setLedParams(0, LedFunction::blinker, LedPosition::right | LedPosition::rear);
+	strip2->setLedParams(2, LedFunction::blinker, LedPosition::left | LedPosition::rear);
+
+	strip2->setLedParams(1, LedFunction::brakeLight | LedFunction::reverseLight, LedPosition::right | LedPosition::rear);
+	strip2->setLedParams(3, LedFunction::brakeLight, LedPosition::left | LedPosition::rear);
+	
+	strip2->setLedParams(8, LedFunction::smokeLight, LedPosition::rear | LedPosition::center);
+
+	strip2->setLedParamsRange(9, WS2812B1_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
+
+	strip2->setLedParamsRange(9, 11, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::right);
+	strip2->setLedParamsRange(WS2812B1_COUNT-1-2, WS2812B1_COUNT-1, LedFunction::ringLight | LedFunction::fancyBlinker, LedPosition::rear | LedPosition::left);
+
+	strip2->setLedOrderRange(0, 8, false); // RGB on WS2811
+	strip2->setLedOrderRange(9, WS2812B1_COUNT-1, true); // GRB on WS2812B (default, but still put) 
+	*/
+
+	leds->addProvider(strip1);
+	leds->addProvider(strip2);
 #endif
-	Piezo *piezo = new Piezo(PIEZO_PIN, 121e3);
 
-	Effects *effects = new Effects(cl, strip, piezo, STOP_LIGHT_CENTER_PIN);
+	CachedLedProvider *cachedLeds = new CachedLedProvider(*leds);
+	// Precache some used stuff
+	cachedLeds->cacheRange(LedFunction::ringLight);
+	cachedLeds->cacheRange(LedFunction::fancyBlinker, LedPosition::right);
+	cachedLeds->cacheRange(LedFunction::fancyBlinker, LedPosition::left);
+	cachedLeds->cacheRange(LedFunction::blinker, LedPosition::agnostic);
+	cachedLeds->cacheRange(LedFunction::blinker, LedPosition::left);
+	cachedLeds->cacheRange(LedFunction::blinker, LedPosition::right);
+	cachedLeds->cacheRange(LedFunction::reverseLight);
+	cachedLeds->cacheRange(LedFunction::brakeLight, LedPosition::rear);
+	cachedLeds->cacheRange(LedFunction::brakeLight, LedPosition::rear | LedPosition::center);
+	cachedLeds->cacheRange(LedFunction::headlight);
+
+	Effects *effects = new Effects(cl, (LedProvider*)cachedLeds, piezo, spoiler, popup);
 #endif
-
 	// Init motor control
 	multicore_launch_core1(comm_thread);
 
@@ -172,6 +240,7 @@ int main() {
 
 		// Try to keep the period 
 		int64_t diff = absolute_time_diff_us(start, end);
-		busy_wait_us(ASSERV_PERIOD_US-diff);
+		//printf("st:%lld\n", diff);
+		busy_wait_us(std::max(ASSERV_PERIOD_US-diff, 0ll));
 	}
 }

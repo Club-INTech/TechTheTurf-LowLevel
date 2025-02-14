@@ -12,7 +12,7 @@ public:
 	CommAsserv(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, ControlLoop *cl, Effects *eff);
 	~CommAsserv();
 	
-	void handleCmd(uint8_t *data, size_t size);
+	bool handleCmd(uint8_t *data, size_t size) override;
 
 private:
 	ControlLoop *cl;

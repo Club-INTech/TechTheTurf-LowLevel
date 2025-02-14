@@ -36,6 +36,8 @@ include_directories(include/)
 add_compile_options(-Wall
         -Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
         -Wno-unused-function # we have some for the docs that aren't called
+        -g
+        -Ofast
         )
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -47,10 +49,12 @@ add_library(ll_common INTERFACE)
 pico_generate_pio_header(ll_common ${CMAKE_CURRENT_LIST_DIR}/pio/ws2812.pio)
 target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/neopixel_connect.cpp"
                                     "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/led_provider.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ws281x_provider.cpp"
-                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/piezo.cpp")
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/piezo.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/servo.cpp"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/spoiler.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/i2c_device.cpp"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ina236.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/popup.cpp")
 
 # Linked libs
-target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio hardware_pwm)
+target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio hardware_pwm hardware_dma)
 
 # Shared library to all pico asserv FW
 add_library(ll_common_asserv INTERFACE)
@@ -80,6 +84,21 @@ target_compile_definitions(dynamixel_sdk INTERFACE)
 # Linked Libs
 target_link_libraries(dynamixel_sdk INTERFACE pico_stdlib hardware_uart)
 
+# Shared library to all pico asserv FW
+add_library(icm426xx INTERFACE)
+target_sources(icm426xx INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/EmbUtils/DataConverter.c" "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/EmbUtils/Message.c"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/EmbUtils/ErrorHelper.c" "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/EmbUtils/InvBasicMath.c"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/Helpers/Icm426xx/helperClockCalib.c" "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/Drivers/Ak0991x/Ak0991x.c"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/Drivers/Icm426xx/Icm426xxSelfTest.c" "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/Drivers/Icm426xx/Icm426xxDriver_HL.c"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/Drivers/Icm426xx/Icm426xxDriver_HL_apex.c" "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/Drivers/Icm426xx/Icm426xxTransport.c"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/Invn/icm42688.cpp")
+
+target_compile_definitions(icm426xx INTERFACE)
+
+# Linked Libs
+target_link_libraries(icm426xx INTERFACE pico_stdlib hardware_i2c ll_common)
+
+
 # Define Final interface libraries from which to make executables
 # Asserv
 # Paminable
@@ -91,8 +110,8 @@ target_link_libraries(ll_asserv_paminable INTERFACE ll_common_asserv)
 # Pamini
 add_library(ll_asserv_pamini INTERFACE)
 target_sources(ll_asserv_pamini INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/driver.cpp")
-target_compile_definitions(ll_asserv_pamini INTERFACE ASSERV ROBOT_PAMI)
-target_link_libraries(ll_asserv_pamini INTERFACE ll_common_asserv)
+target_compile_definitions(ll_asserv_pamini INTERFACE ASSERV ROBOT_PAMI PAMINI ICM42688P INV_MSG_ENABLE)
+target_link_libraries(ll_asserv_pamini INTERFACE ll_common_asserv icm426xx)
 
 # Main robot
 add_library(ll_asserv_main INTERFACE)
@@ -130,12 +149,13 @@ pico_enable_stdio_uart(paminable 0)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(paminable)
+
 add_executable(pamini "${CMAKE_CURRENT_SOURCE_DIR}/src/asserv/main.cpp")
 target_link_libraries(pamini PUBLIC ll_asserv_pamini)
 
 # Common to all projects
-pico_enable_stdio_usb(pamini 1)
-pico_enable_stdio_uart(pamini 0)
+pico_enable_stdio_usb(pamini 0)
+pico_enable_stdio_uart(pamini 1)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(pamini)

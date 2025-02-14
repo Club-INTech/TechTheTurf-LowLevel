@@ -31,7 +31,10 @@ CommAsserv::CommAsserv(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Con
 CommAsserv::~CommAsserv() {
 }
 
-void CommAsserv::handleCmd(uint8_t *data, size_t size) {
+bool CommAsserv::handleCmd(uint8_t *data, size_t size) {
+	if (Comm::handleCmd(data, size)) // Command handled by base class
+		return true;
+
 	uint8_t fbyte = data[0];
 
 	uint8_t cmd = fbyte&0xF;
@@ -44,7 +47,6 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 	float f1, f2, f3, f4;
 	int32_t is1, is2;
 	uint32_t iu1;
-	TelemetryBase* telem;
 	PID *pid;
 
 	switch (cmd) {
@@ -72,16 +74,6 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			memcpy(&f3, &data[1+4*2], sizeof(float));
 			//printf("pid %i kp %f ki %f kd %f\n", subcmd, f1, f2, f3);
 			pid->setPID(f1, f2, f3);
-			break;
-		case 6: // Telem on/off
-			telem = getTelem(subcmd);
-			if (!telem)
-				break;
-
-			if (data[1])
-				telem->start();
-			else
-				telem->stop();
 			break;
 		case 9: // Set target
 			memcpy(&f1, &data[1], sizeof(float));
@@ -196,9 +188,15 @@ void CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				memcpy(&iu1, &data[1], sizeof(uint32_t));
 				this->effects->setControlState(ControlState::off);
 				this->effects->leds->setColor(iu1, data[5]);
+			} else if (subcmd == 9) { // PopUp servo debug
+				memcpy(&f1, &data[1], sizeof(float));
+				memcpy(&f2, &data[1+4], sizeof(float));
+				this->effects->popup->left->setValue(f1);
+				this->effects->popup->right->setValue(f2);
 			}
 			break;
 		default:
-			break;
+			return false;
 	}
+	return true;
 }

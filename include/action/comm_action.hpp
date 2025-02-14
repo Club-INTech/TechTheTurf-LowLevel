@@ -10,7 +10,7 @@ public:
 	CommAction(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Elevator *elev, Arm *rightArm, Arm *leftArm);
 	~CommAction();
 	
-	void handleCmd(uint8_t *data, size_t size);
+	bool handleCmd(uint8_t *data, size_t size) override;
 
 	void startWork();
 	void finishWork();

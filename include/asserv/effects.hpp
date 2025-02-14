@@ -1,6 +1,7 @@
 #pragma  once
 
-#include "action/dynamixel_xl430.hpp"
+#include <shared/popup.hpp>
+#include <shared/spoiler.hpp>
 #include <asserv/control_loop.hpp>
 #include <shared/led_provider.hpp>
 #include <shared/piezo.hpp>
@@ -73,7 +74,7 @@ static inline float convertLight(char val) {
 class Effects
 {
 public:
-	Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, uint8_t center_brake_pin);
+	Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoiler, PopUp *popup);
 	~Effects();
 
 	void setControlState(ControlState state) {
@@ -105,9 +106,10 @@ public:
 
 	LedProvider *leds;
 	Piezo *piezo;
+	Spoiler *spoiler;
+	PopUp *popup;
 private:
 	ControlLoop *cl;
-	uint8_t center_brake_pin;
 	absolute_time_t lastTime;
 
 	long firstPixelHue;

@@ -3,6 +3,7 @@
 #include <shared/neopixel_connect.h>
 #include <cstdint>
 #include <vector>
+#include <unordered_map>
 
 enum class LedFunction : uint16_t {
 	all = 0xFFFF,
@@ -27,17 +28,17 @@ enum class LedPosition : uint8_t {
 	rear = 0x10
 };
 
-inline constexpr LedPosition operator&(LedPosition x, LedPosition y) { return static_cast<LedPosition> (static_cast<size_t>(x) & static_cast<size_t>(y)); }
-inline constexpr LedPosition operator|(LedPosition x, LedPosition y) { return static_cast<LedPosition> (static_cast<size_t>(x) | static_cast<size_t>(y)); }
-inline constexpr LedPosition operator^(LedPosition x, LedPosition y) { return static_cast<LedPosition> (static_cast<size_t>(x) ^ static_cast<size_t>(y)); }
-inline constexpr LedPosition operator~(LedPosition x) { return static_cast<LedPosition>(~static_cast<size_t>(x)); }
+inline constexpr LedPosition operator&(LedPosition x, LedPosition y) { return static_cast<LedPosition> (static_cast<uint32_t>(x) & static_cast<uint32_t>(y)); }
+inline constexpr LedPosition operator|(LedPosition x, LedPosition y) { return static_cast<LedPosition> (static_cast<uint32_t>(x) | static_cast<uint32_t>(y)); }
+inline constexpr LedPosition operator^(LedPosition x, LedPosition y) { return static_cast<LedPosition> (static_cast<uint32_t>(x) ^ static_cast<uint32_t>(y)); }
+inline constexpr LedPosition operator~(LedPosition x) { return static_cast<LedPosition>(~static_cast<uint32_t>(x)); }
 inline LedPosition &operator&=(LedPosition & x, LedPosition y) { x = x & y; return x; }
 inline LedPosition &operator|=(LedPosition & x, LedPosition y) { x = x | y; return x; }
 inline LedPosition &operator^=(LedPosition & x, LedPosition y) { x = x ^ y; return x; }
-inline constexpr LedFunction operator&(LedFunction x, LedFunction y) { return static_cast<LedFunction> (static_cast<size_t>(x) & static_cast<size_t>(y)); }
-inline constexpr LedFunction operator|(LedFunction x, LedFunction y) { return static_cast<LedFunction> (static_cast<size_t>(x) | static_cast<size_t>(y)); }
-inline constexpr LedFunction operator^(LedFunction x, LedFunction y) { return static_cast<LedFunction> (static_cast<size_t>(x) ^ static_cast<size_t>(y)); }
-inline constexpr LedFunction operator~(LedFunction x) { return static_cast<LedFunction>(~static_cast<size_t>(x)); }
+inline constexpr LedFunction operator&(LedFunction x, LedFunction y) { return static_cast<LedFunction> (static_cast<uint32_t>(x) & static_cast<uint32_t>(y)); }
+inline constexpr LedFunction operator|(LedFunction x, LedFunction y) { return static_cast<LedFunction> (static_cast<uint32_t>(x) | static_cast<uint32_t>(y)); }
+inline constexpr LedFunction operator^(LedFunction x, LedFunction y) { return static_cast<LedFunction> (static_cast<uint32_t>(x) ^ static_cast<uint32_t>(y)); }
+inline constexpr LedFunction operator~(LedFunction x) { return static_cast<LedFunction>(~static_cast<uint32_t>(x)); }
 inline LedFunction &operator&=(LedFunction & x, LedFunction y) { x = x & y; return x; }
 inline LedFunction &operator|=(LedFunction & x, LedFunction y) { x = x | y; return x; }
 inline LedFunction &operator^=(LedFunction & x, LedFunction y) { x = x ^ y; return x; }
@@ -50,35 +51,39 @@ public:
 	{
 		using iterator_category = std::forward_iterator_tag;
 		using difference_type   = std::ptrdiff_t;
-		using value_type        = size_t;
-		using pointer           = size_t*;
-		using reference         = size_t&;
+		using value_type        = uint32_t;
+		using pointer           = uint32_t*;
+		using reference         = uint32_t&;
 
 		void advanceToNext();
 
-		Iterator(LedProvider* ptr, LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, size_t pos=0, bool specific=false);
+		Iterator(LedProvider* ptr, LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, uint32_t pos=0, bool specific=false);
+		Iterator(std::vector<uint32_t> *leds, uint32_t pos=0);
 
 		Iterator copy();
 
-		reference operator*() const { return (reference)this->pos; }
-		pointer operator->() { return &this->pos; }
+		reference operator*() const { return (reference)(this->leds != nullptr ?  this->leds->at(this->pos) : this->pos); }
+		pointer operator->() { return &(this->leds != nullptr ?  this->leds->at(this->pos) : this->pos); }
 		Iterator& operator++() {
 			this->pos++;
-			advanceToNext();
+			if (this->leds == nullptr)
+				advanceToNext();
 			return *this;
 		}
-		friend bool operator==(const Iterator& a, const Iterator& b) { return a.prov == b.prov && a.fMask == b.fMask && a.pMask == b.pMask && a.pos == b.pos && a.specific == b.specific; };
-		friend bool operator!=(const Iterator& a, const Iterator& b) { return a.prov != b.prov || a.fMask != b.fMask || a.pMask != b.pMask || a.pos != b.pos || a.specific != b.specific; };  
+		friend bool operator==(const Iterator& a, const Iterator& b) { return a.leds == b.leds && a.pos == b.pos && a.prov == b.prov && a.fMask == b.fMask && a.pMask == b.pMask && a.specific == b.specific; };
+		friend bool operator!=(const Iterator& a, const Iterator& b) { return a.leds != b.leds || a.pos != b.pos || a.prov != b.prov || a.fMask != b.fMask || a.pMask != b.pMask || a.specific != b.specific; };  
 
 	private:
 		LedProvider *prov;
 		LedFunction fMask;
 		LedPosition pMask;
-		size_t pos;
+		uint32_t pos;
 		bool specific;
+		std::vector<uint32_t> *leds;
 	};
 
 	LedRange(LedProvider *prov, LedFunction fMask, LedPosition pMask, bool specific);
+	LedRange(std::vector<uint32_t> *leds);
 
 	Iterator begin();
 	Iterator end();
@@ -90,21 +95,94 @@ class LedProvider {
 public:
 	virtual ~LedProvider() {};
 
-	LedRange range(LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, bool specific=false);
+	virtual LedRange range(LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, bool specific=false);
 
-	virtual size_t getSize() = 0;
-	virtual size_t getSizeParam(LedFunction fMask, LedPosition pMask=LedPosition::agnostic, bool specific=false);
+	virtual uint32_t getSize() = 0;
+	virtual uint32_t getSizeParam(LedFunction fMask, LedPosition pMask=LedPosition::agnostic, bool specific=false);
 	// Affects mask
-	virtual void setColorRaw(size_t idx, uint32_t rgb, uint8_t brightness=255) = 0;
+	virtual void setColorRaw(uint32_t idx, uint32_t rgb, uint8_t brightness=255) = 0;
 	virtual void setColor(uint32_t rgb, uint8_t brightness=255, LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, bool specific=false);
 
-	virtual void setLedParams(size_t idx, LedFunction func, LedPosition pos) = 0;
-	virtual void setLedParamsRange(size_t from, size_t to, LedFunction func, LedPosition pos);
+	virtual void setLedParams(uint32_t idx, LedFunction func, LedPosition pos) = 0;
+	virtual void setLedParamsRange(uint32_t from, uint32_t to, LedFunction func, LedPosition pos);
 
-	virtual LedPosition getLedPosition(size_t idx) = 0;
-	virtual LedFunction getLedFunction(size_t idx) = 0;
+	virtual LedPosition getLedPosition(uint32_t idx) = 0;
+	virtual LedFunction getLedFunction(uint32_t idx) = 0;
 
 	virtual void clear() = 0;
 
 	virtual void display() = 0;
+};
+
+struct LedProviderInfo {
+	LedProvider *prov;
+	uint32_t index, size;
+
+	LedProviderInfo(LedProvider *prov, uint32_t idx, uint32_t size) : prov(prov), index(idx), size(size) {}
+};
+
+class AggregateLedProvider : public LedProvider {
+public:
+	void addProvider(LedProvider *prov);
+	void removeProvider(LedProvider *prov);	
+
+	// Led provider implementation
+
+	uint32_t getSize();
+	// Affects mask
+	void setColorRaw(uint32_t idx, uint32_t rgb, uint8_t brightness=255);
+
+	void setLedParams(uint32_t idx, LedFunction func, LedPosition pos);
+
+	LedPosition getLedPosition(uint32_t idx);
+	LedFunction getLedFunction(uint32_t idx);
+
+	void clear();
+
+	void display();
+
+private:
+	LedProviderInfo getProvider(uint32_t idx);
+
+	std::vector<LedProviderInfo> providers;
+	uint32_t size;
+};
+
+struct LedRangeCache {
+	std::vector<uint32_t> indices;
+	uint32_t size;
+};
+
+class CachedLedProvider : public LedProvider {
+public:
+	CachedLedProvider(LedProvider &prov);
+
+	void  __attribute__((optimize("O0"))) cacheRange(LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, bool specific=false)
+			{LedRange __attribute__((unused)) rg = range(fMask, pMask, specific);}
+	void clearCache();
+
+	// Led provider implementation
+
+	LedRange range(LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, bool specific=false);
+
+	uint32_t getSize();
+	uint32_t getSizeParam(LedFunction fMask, LedPosition pMask=LedPosition::agnostic, bool specific=false);
+	// Affects mask
+	void setColorRaw(uint32_t idx, uint32_t rgb, uint8_t brightness=255);
+
+	void setLedParams(uint32_t idx, LedFunction func, LedPosition pos);
+
+	LedPosition getLedPosition(uint32_t idx);
+	LedFunction getLedFunction(uint32_t idx);
+
+	void clear();
+
+	void display();
+
+private:
+	static uint32_t cacheId(LedFunction fMask, LedPosition pMask=LedPosition::agnostic, bool specific=false);
+
+	LedProvider &prov;
+
+	std::unordered_map<uint32_t, LedRangeCache> cache;
 };

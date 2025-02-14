@@ -24,7 +24,7 @@ public:
 	void clearTelems();
 
 	void work();
-	virtual void handleCmd(uint8_t *data, size_t size) = 0;
+	virtual bool handleCmd(uint8_t *data, size_t size);
 
 protected:
 	void i2cInit(uint8_t address);

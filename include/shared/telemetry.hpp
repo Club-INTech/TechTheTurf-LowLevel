@@ -5,6 +5,10 @@
 
 #include <pico/sync.h>
 
+enum class TelemetryPacketType {
+	PID = 0,
+};
+
 class TelemetryBase
 {
 public:
@@ -16,6 +20,7 @@ public:
 	virtual size_t elemSize() = 0;
 	virtual void setDownsample(uint8_t ds) = 0;
 	virtual void flush() = 0;
+	virtual TelemetryPacketType getType() = 0;
 };
 
 template <class T>
@@ -25,7 +30,7 @@ struct TelemPacket
 	T data;
 };
 
-template <class T, size_t bufferSize>
+template <class T, size_t bufferSize = 500>
 class Telemetry : public TelemetryBase
 {
 public:
@@ -111,6 +116,10 @@ public:
 		std::queue<TelemPacket<T>> empty;
 		std::swap(this->queue, empty);
 		mutex_exit(&this->mutex);
+	}
+
+	TelemetryPacketType getType() {
+		return T::type();
 	}
 	
 private:

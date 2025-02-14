@@ -63,7 +63,10 @@ void CommAction::queueCmd(uint8_t fbyte, uint8_t *data, size_t size) {
 	}
 }
 
-void CommAction::handleCmd(uint8_t *data, size_t size) {
+bool CommAction::handleCmd(uint8_t *data, size_t size) {
+	if (Comm::handleCmd(data, size)) // Command handled by base class
+		return true;
+
 	uint8_t fbyte = data[0];
 
 	uint8_t cmd = fbyte&0xF;
@@ -71,7 +74,6 @@ void CommAction::handleCmd(uint8_t *data, size_t size) {
 
 	// Floats need to be aligned, can't just cast
 	float f1,f2;
-	TelemetryBase* telem;
 
 	switch (cmd) { // Only handle reads from master here, defer everything to main core
 		// Elevator control
@@ -117,17 +119,6 @@ void CommAction::handleCmd(uint8_t *data, size_t size) {
 				this->queueCmd(fbyte, &data[1], size-1);
 			}
 			break;
-		// Telem on/off
-		case 6: 
-			telem = getTelem(subcmd);
-			if (!telem)
-				break;
-
-			if (data[1])
-				telem->start();
-			else
-				telem->stop();
-			break;
 		// Ready for next order
 		case 10: 
 			this->sendDataSize = 1;
@@ -137,4 +128,6 @@ void CommAction::handleCmd(uint8_t *data, size_t size) {
 			this->queueCmd(fbyte, &data[1], size-1);
 			break; 
 	}
+
+	return true;
 }

@@ -2,7 +2,7 @@
 
 #include <hardware/uart.h>
 #include <hardware/i2c.h>
-#include <cmath>
+#include <math.h>
 
 #ifdef ASSERV
 
@@ -128,26 +128,84 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define RIGHT_MOTOR_FW_PIN 2
 		#define RIGHT_MOTOR_RW_PIN 3
 	#else // Pamini
-		#define LEFT_MOTOR_FW_PIN 2
-		#define LEFT_MOTOR_RW_PIN 3
-		#define RIGHT_MOTOR_FW_PIN 4
-		#define RIGHT_MOTOR_RW_PIN 5
+		#define LEFT_MOTOR_FW_PIN 8
+		#define LEFT_MOTOR_RW_PIN 9
+		#define RIGHT_MOTOR_FW_PIN 10
+		#define RIGHT_MOTOR_RW_PIN 11
 	#endif
 
-	#define LEFT_INCREMENTAL_A_PIN 8
-	#define LEFT_INCREMENTAL_B_PIN 9
-	#define RIGHT_INCREMENTAL_A_PIN 6
-	#define RIGHT_INCREMENTAL_B_PIN 7
+	#ifdef PAMINABLE
+		#define LEFT_INCREMENTAL_A_PIN 8
+		#define LEFT_INCREMENTAL_B_PIN 9
+		#define RIGHT_INCREMENTAL_A_PIN 6
+		#define RIGHT_INCREMENTAL_B_PIN 7
+	#else // Pamini
+		#define LEFT_INCREMENTAL_A_PIN 2
+		#define LEFT_INCREMENTAL_B_PIN 3
+		#define RIGHT_INCREMENTAL_A_PIN 4
+		#define RIGHT_INCREMENTAL_B_PIN 5
+	#endif
 
-	#ifndef PAMINABLE // Pami
+	#ifndef PAMINABLE // Pamini
 		#define ENABLE_EFFECTS
 
-		#define STOP_LIGHT_CENTER_PIN 14
+		#define STOP_LIGHT_CENTER_PIN 15
 
-		#define WS2812B_PIN 15
-		#define WS2812B_COUNT 48
+		#define DEBUG_UART_TXD 16
+		#define DEBUG_UART_RXD 17
+		#define DEBUG_UART_INST uart0
+		#define DEBUG_UART_BAUDRATE 921600
 
-		#define PIEZO_PIN 10
+		#define ACCESSORY_I2C_SDA 18
+		#define ACCESSORY_I2C_SCL 19
+		#define ACCESSORY_I2C_INST i2c1
+		#define ACCESSORY_I2C_BAUDRATE 1000e3
+
+		#define ICM42688_ADDR 0x68
+		#define ICM42688_INT1_PIN 20
+		#define ICM42688_FSYNC_PIN 21
+
+		#define INA236_ADDR 0x40
+		#define INA236_SHUNT_RESISTOR 8e-3
+		#define INA236_MAX_CURRENT 10
+
+		// ADC1
+		#define LDR1_PIN 27
+		// ADC0
+		#define LDR2_PIN 26
+
+		#define WS2812B1_PIN 6
+		#define WS2812B1_COUNT 4
+		#define WS2812B2_PIN 7
+		#define WS2812B2_COUNT 48
+
+		#define PIEZO_PIN 22
+
+		#define SERVO1_PIN 12
+		#define SERVO2_PIN 13
+		#define SERVO3_PIN 14
+		#define SERVO4_PIN 15
+
+		#define SERVO_SPOILER_LONG_PIN SERVO1_PIN
+		#define SERVO_SPOILER_SHORT_PIN SERVO2_PIN
+		#define SERVO_POPUP_LEFT_PIN SERVO4_PIN
+		#define SERVO_POPUP_RIGHT_PIN SERVO3_PIN
+
+		#define POPUP_CLOSE_ANGLE -0.7
+		#define POPUP_OPEN_ANGLE 0.3
+		#define POPUP_RIGHT_OFFSET 0.1
+
+		#define MAX_SPOILER_H_VEL 50
+		#define MAX_SPOILER_H_ACCEL 5
+		#define MAX_SPOILER_ANG_VEL 2
+		#define MAX_SPOILER_ANG_ACCEL 0.5
+
+		#define SPOILER_START_H 5
+
+		#define SPOILER_L1 30
+		#define SPOILER_L2 15
+		#define SPOILER_L3 23
+		#define SPOILER_L4 8
 	#endif
 
 	// Mech constants
