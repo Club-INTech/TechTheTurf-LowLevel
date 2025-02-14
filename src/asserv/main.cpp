@@ -183,6 +183,8 @@ int main() {
 
 	WS281XProvider *strip2 = new WS281XProvider(WS2812B2_PIN, WS2812B2_COUNT, pio1, 1);
 
+	strip2->setLedParamsRange(0, WS2812B2_COUNT-1, LedFunction::ringLight, LedPosition::agnostic);
+
 	/*strip2->setLedParams(0, LedFunction::blinker, LedPosition::right | LedPosition::rear);
 	strip2->setLedParams(2, LedFunction::blinker, LedPosition::left | LedPosition::rear);
 

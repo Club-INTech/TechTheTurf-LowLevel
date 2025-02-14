@@ -63,12 +63,12 @@ void NeoPixelConnect::init(uint8_t pinNumber, uint16_t numberOfPixels) {
 	channel_config_set_read_increment(&dmaConfig, true);
 	channel_config_set_irq_quiet(&dmaConfig, true);
 	// DREQ_FORCE by default
-	//channel_config_set_dreq(&dmaConfig, pio_get_dreq(this->pixelPio, this->pixelSm, true));
+	channel_config_set_dreq(&dmaConfig, pio_get_dreq(this->pixelPio, this->pixelSm, true));
 
 	dma_channel_configure(
 		this->dmaChannel,
 		&dmaConfig,
-		&this->pixelPio->txf[0], // Write address (only need to set this once)
+		&this->pixelPio->txf[this->pixelSm], // Write address (only need to set this once)
 		nullptr,             // Don't provide a read address yet
 		numberOfPixels, // Write the same value many times, then halt and interrupt
 		false             // Don't start yet
@@ -125,7 +125,7 @@ void NeoPixelConnect::fill(uint8_t r, uint8_t g, uint8_t b, bool autoShow) {
 /// @brief Display all the pixels in the buffer
 void NeoPixelConnect::show(void) {
 	// Launch DMA transfer
-	dma_channel_wait_for_finish_blocking(this->dmaChannel);
+	//dma_channel_wait_for_finish_blocking(this->dmaChannel);
 	dma_channel_set_read_addr(this->dmaChannel, &this->pixelBuffer, true);
 }
 

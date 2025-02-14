@@ -19,7 +19,7 @@ LedRange::LedRange(LedProvider *prov, LedFunction fMask, LedPosition pMask, bool
 }
 
 LedRange::LedRange(std::vector<uint32_t> *leds)
- : itBeg(leds, 0), itEnd(leds, leds->size()-1) {
+ : itBeg(leds, 0), itEnd(leds, leds->size()) {
 
 }
 
