@@ -177,7 +177,7 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define WS2812B1_PIN 6
 		#define WS2812B1_COUNT 4
 		#define WS2812B2_PIN 7
-		#define WS2812B2_COUNT 48
+		#define WS2812B2_COUNT (43+6)
 
 		#define PIEZO_PIN 22
 
@@ -191,9 +191,9 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define SERVO_POPUP_LEFT_PIN SERVO4_PIN
 		#define SERVO_POPUP_RIGHT_PIN SERVO3_PIN
 
-		#define POPUP_CLOSE_ANGLE -0.7
-		#define POPUP_OPEN_ANGLE 0.3
-		#define POPUP_RIGHT_OFFSET 0.1
+		#define POPUP_CLOSE_ANGLE -0.04
+		#define POPUP_OPEN_ANGLE -0.56
+		#define POPUP_RIGHT_OFFSET -0.01
 
 		#define MAX_SPOILER_H_VEL 50
 		#define MAX_SPOILER_H_ACCEL 5

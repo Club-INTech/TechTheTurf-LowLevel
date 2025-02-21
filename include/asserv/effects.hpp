@@ -17,6 +17,7 @@
 #define HEADLIGHTS_DIM 30
 #define HEADLIGHTS_DIM_RGB 0xFFFF69
 #define HEADLIGHTS_RGB 0xA6D3F5
+#define RING_BATT_BRIGHTNESS_DIM 3
 
 #define RING_BRIGHTNESS 150
 #define RING_BRIGHTNESS_DIM 30
@@ -34,6 +35,9 @@
 #define PIEZO_FIRE_BRIGHT 150
 
 #define REVERSE_LIGHT_BRIGHTNESS 60
+
+#define STARTUP_TIME 1.6f
+#define BATTERY_TIME 3.0f
 
 #define DISCO_TIME 5
 
@@ -64,7 +68,8 @@ enum class RingState {
 	speed,
 	chase,
 	wiper,
-	police
+	police,
+	battery
 };
 
 static inline float convertLight(char val) {
@@ -90,6 +95,7 @@ public:
 	void setHeadlights(HeadlightState state) {this->headlights = state;}
 	void setReversing(bool rev) {this->reversing = rev;}
 	void setSmoking(bool smoking) {this->smoking = smoking;}
+	void setPop(float left, float right) {this->leftPop = left; this->rightPop = right;}
 
 	ControlState getControlState() {return this->controlState;}
 	BlinkerState getBlinker() {return this->blinkers;}
@@ -100,6 +106,8 @@ public:
 	bool getCenterStop() {return this->stopCenter;}
 	bool getReversing() {return this->reversing;}
 	bool getSmoking() {return this->smoking;}
+	float getPopLeft() {return this->leftPop;}
+	float getPopRight() {return this->rightPop;}
 
 	// Handle all the stuff
 	void work();
@@ -127,11 +135,13 @@ private:
 	bool reversing;
 	bool ringDisco;
 	bool smoking;
+	float leftPop, rightPop;
 
 	float discoTimer;
 	float blinkerTimer;
 	float fancyBlinkerTimer;
 	float centerTimer;
-	float rainbowTimer;
+	float ringTimer;
 	float smokeTimer;
+	float startupTimer;
 };

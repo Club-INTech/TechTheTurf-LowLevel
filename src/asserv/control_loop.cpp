@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <cmath> 
 #include <asserv/control_loop.hpp>
+#include <shared/utils.hpp>
 
 ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLeft, DriverBase *drvRight, Odometry *odo,
 				PID *lSpeedPid, PID *rSpeedPid, PID *dstPid, PID *anglePid, PLL *lPll, PLL *rPll, 
-				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample) {
+				AccelLimiter *lSpeedTargetAlim, AccelLimiter *rSpeedTargetAlim, Controller *ctrl, float encoderWheelRadius, uint32_t positionLoopDownsample,
+				INA236 *ina) : powerTelem("Power") {
 	this->encLeft = encLeft;
 	this->encRight = encRight;
 	this->drvLeft = drvLeft;
@@ -23,6 +25,8 @@ ControlLoop::ControlLoop(Encoder *encLeft, Encoder *encRight, DriverBase *drvLef
 
 	this->encoderWheelRadius = encoderWheelRadius;
 	this->positionLoopDownsample = positionLoopDownsample;
+
+	this->ina236 = ina;
 
 	this->lastTime = get_absolute_time();
 	this->lastTimePos = this->lastTime;
@@ -128,6 +132,17 @@ void ControlLoop::work() {
 	// Update last counts
 	this->lastCountLeft = lCnt;
 	this->lastCountRight = rCnt;
+
+	// If we have the current sensor
+	if (this->ina236 != nullptr) {
+		this->lastPower.voltage = this->ina236->readBusVoltage();
+		this->lastPower.current = this->ina236->readCurrent();
+		this->lastPower.power = this->ina236->readPower();
+		this->powerTelem.add(this->lastPower, dt);
+	}
+
+	// If we have the IMU, read data
+	
 
 	if (!this->running)
 		return;

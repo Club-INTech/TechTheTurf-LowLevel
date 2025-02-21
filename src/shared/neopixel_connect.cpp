@@ -16,6 +16,7 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <cstdint>
+#include <hardware/pio.h>
 #include <hardware/regs/dreq.h>
 #include <hardware/timer.h>
 #include <shared/neopixel_connect.h>
@@ -23,16 +24,6 @@
 #include <hardware/dma.h>
 #include <string.h>
 #include <cstdio>
-
-/// @brief Constructor - pio will be set to pio0 and sm to 0
-/// @param pinNumber: GPIO pin that controls the NeoPixel string.
-/// @param numberOfPixels: Number of pixels in the string
-
-NeoPixelConnect::NeoPixelConnect(uint8_t pinNumber, uint16_t numberOfPixels) {
-	this->pixelSm = 0;
-	this->pixelPio = pio0;
-	this->init(pinNumber, numberOfPixels);
-}
 
 /// @brief Constructor
 /// @param pinNumber: GPIO pin that controls the NeoPixel string.
@@ -45,15 +36,20 @@ NeoPixelConnect::NeoPixelConnect(uint8_t pinNumber, uint16_t numberOfPixels, PIO
 	this->init(pinNumber, numberOfPixels);
 }
 
+NeoPixelConnect::~NeoPixelConnect() {
+	free(this->pixelBuffer);
+}
+
 /// @brief Continuation of Constructor
 /// @param pinNumber: GPIO pin that controls the NeoPixel string.
 /// @param numberOfPixels: Number of pixels in the string
 void NeoPixelConnect::init(uint8_t pinNumber, uint16_t numberOfPixels) {
-	uint offset = pio_add_program(this->pixelPio, &ws2812_program);
-	programInit(this->pixelPio, this->pixelSm, offset, pinNumber, 800000, false);
-
+	this->pixelBuffer = (uint8_t*)aligned_alloc(4, numberOfPixels * 4 * sizeof(uint8_t));
 	// save the number of pixels in use
 	this->realPixelCnt = numberOfPixels;
+
+	uint offset = pio_add_program(this->pixelPio, &ws2812_program);
+	programInit(this->pixelPio, this->pixelSm, offset, pinNumber, 800000, false);
 
 	// Configure a channel to write the same word (32 bits) repeatedly to PIO0
 	// SM0's TX FIFO, paced by the data request signal from that peripheral.
@@ -62,7 +58,6 @@ void NeoPixelConnect::init(uint8_t pinNumber, uint16_t numberOfPixels) {
 	channel_config_set_transfer_data_size(&dmaConfig, DMA_SIZE_32);
 	channel_config_set_read_increment(&dmaConfig, true);
 	channel_config_set_irq_quiet(&dmaConfig, true);
-	// DREQ_FORCE by default
 	channel_config_set_dreq(&dmaConfig, pio_get_dreq(this->pixelPio, this->pixelSm, true));
 
 	dma_channel_configure(
@@ -70,7 +65,7 @@ void NeoPixelConnect::init(uint8_t pinNumber, uint16_t numberOfPixels) {
 		&dmaConfig,
 		&this->pixelPio->txf[this->pixelSm], // Write address (only need to set this once)
 		nullptr,             // Don't provide a read address yet
-		numberOfPixels, // Write the same value many times, then halt and interrupt
+		numberOfPixels, // Number of transfers
 		false             // Don't start yet
 	);
 
@@ -86,9 +81,9 @@ void NeoPixelConnect::init(uint8_t pinNumber, uint16_t numberOfPixels) {
 /// @param b: blue value (0-255)
 /// @param autoShow: If true, show the change immediately.
 void NeoPixelConnect::setPixel(uint16_t pixelNumber, uint8_t r, uint8_t g, uint8_t b, bool autoShow) {
-	this->pixelBuffer[pixelNumber][RED] = r;
-	this->pixelBuffer[pixelNumber][GREEN] = g;
-	this->pixelBuffer[pixelNumber][BLUE] = b;
+	this->pixelBuffer[(pixelNumber*4) + RED] = r;
+	this->pixelBuffer[(pixelNumber*4) + GREEN] = g;
+	this->pixelBuffer[(pixelNumber*4) + BLUE] = b;
 
 	if (autoShow)
 		this->show();
@@ -99,7 +94,7 @@ void NeoPixelConnect::setPixel(uint16_t pixelNumber, uint8_t r, uint8_t g, uint8
 void NeoPixelConnect::clear(bool autoShow) {
 	// set all the neopixels in the buffer to all zeroes
 
-	memset(this->pixelBuffer, 0, this->realPixelCnt*3*sizeof(uint8_t));
+	memset(this->pixelBuffer, 0, this->realPixelCnt*4*sizeof(uint8_t));
 
 	if (autoShow)
 		this->show();
@@ -114,9 +109,9 @@ void NeoPixelConnect::fill(uint8_t r, uint8_t g, uint8_t b, bool autoShow) {
 	// fill all the neopixels in the buffer with the
 	// specified rgb values.
 	for (uint16_t i = 0; i < this->realPixelCnt; i++) {
-		this->pixelBuffer[i][RED] = r;
-		this->pixelBuffer[i][GREEN] = g;
-		this->pixelBuffer[i][BLUE] = b;
+		this->pixelBuffer[(i*4) + RED] = r;
+		this->pixelBuffer[(i*4) + GREEN] = g;
+		this->pixelBuffer[(i*4) + BLUE] = b;
 	}
 	if (autoShow)
 		this->show();
@@ -126,7 +121,7 @@ void NeoPixelConnect::fill(uint8_t r, uint8_t g, uint8_t b, bool autoShow) {
 void NeoPixelConnect::show(void) {
 	// Launch DMA transfer
 	//dma_channel_wait_for_finish_blocking(this->dmaChannel);
-	dma_channel_set_read_addr(this->dmaChannel, &this->pixelBuffer, true);
+	dma_channel_set_read_addr(this->dmaChannel, this->pixelBuffer, true);
 }
 
 uint16_t NeoPixelConnect::size(void) {

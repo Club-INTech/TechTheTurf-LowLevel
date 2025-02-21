@@ -2,11 +2,13 @@
 
 #include <queue>
 #include <cstring>
+#include <string>
 
 #include <pico/sync.h>
 
 enum class TelemetryPacketType {
 	PID = 0,
+	Power = 1,
 };
 
 class TelemetryBase
@@ -21,6 +23,7 @@ public:
 	virtual void setDownsample(uint8_t ds) = 0;
 	virtual void flush() = 0;
 	virtual TelemetryPacketType getType() = 0;
+	virtual std::string getName();
 };
 
 template <class T>
@@ -34,12 +37,13 @@ template <class T, size_t bufferSize = 500>
 class Telemetry : public TelemetryBase
 {
 public:
-	Telemetry() {
+	Telemetry(std::string name = "None") {
 		mutex_init(&this->mutex);
 		this->running = false;
 		this->time = 0;
 		this->downsample = 4;
 		this->idx = 0;
+		this->name = name;
 		stop();
 	}
 
@@ -121,6 +125,14 @@ public:
 	TelemetryPacketType getType() {
 		return T::type();
 	}
+
+	void setName(std::string name) {
+		this->name = name;
+	}
+
+	std::string getName() {
+		return this->name;
+	}
 	
 private:
 
@@ -145,6 +157,8 @@ private:
 	bool running;
 	uint8_t downsample;
 	uint8_t idx;
+
+	std::string name;
 	
 	std::queue<TelemPacket<T>> queue;
 	mutex_t mutex;

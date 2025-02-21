@@ -2,6 +2,8 @@
 #include <asserv/comm_asserv.hpp>
 #include <asserv/pid.hpp>
 
+#include <shared/utils.hpp>
+
 #if defined(ROBOT_MAIN) && !defined(ROBOT_MAIN_ODRIVE)
 #include <asserv/driver_bg.hpp>
 #endif
@@ -25,7 +27,8 @@ CommAsserv::CommAsserv(uint sdaPin, uint sclPin, uint addr, i2c_inst_t *i2c, Con
 	this->cl = cl;
 	this->effects = eff;
 	for (size_t i=0; i<4; i++)
-		addTelem(i, &getPid(cl, i)->telem);
+		addTelem(&getPid(cl, i)->telem);
+	addTelem(&this->cl->powerTelem);
 }
 
 CommAsserv::~CommAsserv() {
@@ -45,8 +48,8 @@ bool CommAsserv::handleCmd(uint8_t *data, size_t size) {
 
 	// Floats need to be aligned, can't just cast
 	float f1, f2, f3, f4;
-	int32_t is1, is2;
-	uint32_t iu1;
+	int32_t is1, is2, is3, is4;
+	uint32_t iu1, iu2;
 	PID *pid;
 
 	switch (cmd) {
@@ -136,9 +139,13 @@ bool CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			if (subcmd == 0) { // Read encoders
 				is1 = this->cl->encLeft->getCount();
 				is2 = this->cl->encRight->getCount();
-				this->sendDataSize = 2*sizeof(int32_t);
-				memcpy(&this->sendData[0], &is1, sizeof(int32_t));
-				memcpy(&this->sendData[4], &is2, sizeof(int32_t));
+				is3 = this->cl->encLeft->getSpeedCount();
+				is4 = this->cl->encRight->getSpeedCount();
+				this->sendDataSize = 4*sizeof(int32_t);
+				memcpy(&this->sendData[4*0], &is1, sizeof(int32_t));
+				memcpy(&this->sendData[4*1], &is2, sizeof(int32_t));
+				memcpy(&this->sendData[4*2], &is3, sizeof(int32_t));
+				memcpy(&this->sendData[4*3], &is4, sizeof(int32_t));
 			} else if (subcmd == 1) { // Write raw motor values
 				memcpy(&f1, &data[1], sizeof(float));
 				memcpy(&f2, &data[1+4], sizeof(float));
@@ -175,6 +182,8 @@ bool CommAsserv::handleCmd(uint8_t *data, size_t size) {
 			else if (subcmd == 7) { // Effects
 				if (!this->effects)
 					break;
+				memcpy(&f1, &data[6], sizeof(float));
+				memcpy(&f2, &data[6+4], sizeof(float));
 				this->effects->setControlState((ControlState)data[2]);
 				this->effects->setBlinker((BlinkerState)data[3]);
 				this->effects->setStop(data[1]&0x1);
@@ -184,15 +193,41 @@ bool CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				this->effects->setDisco((data[1]>>2)&0x1);
 				this->effects->setReversing((data[1]>>3)&0x1);
 				this->effects->setSmoking((data[1]>>4)&0x1);
+				this->effects->setPop(f1, f2);
 			} else if (subcmd == 8) { // RGB debug
 				memcpy(&iu1, &data[1], sizeof(uint32_t));
+				memcpy(&iu2, &data[1+4], sizeof(uint32_t));
 				this->effects->setControlState(ControlState::off);
-				this->effects->leds->setColor(iu1, data[5]);
+				if (iu2 != 0xFFFFFFFF) {
+					this->effects->leds->setColorRaw(iu2, iu1, data[9]);
+				} else {
+					this->effects->leds->setColor(iu1, data[9]);
+				}
 			} else if (subcmd == 9) { // PopUp servo debug
 				memcpy(&f1, &data[1], sizeof(float));
 				memcpy(&f2, &data[1+4], sizeof(float));
-				this->effects->popup->left->setValue(f1);
-				this->effects->popup->right->setValue(f2);
+				if (f1 < -1 || f1 > 1) {
+					this->effects->popup->left->disable();
+				} else {
+					this->effects->popup->left->setValue(f1);
+				}
+				if (f2 < -1 || f2 > 1) {
+					this->effects->popup->right->disable();
+				} else {
+					this->effects->popup->right->setValue(f2);
+				}
+			}
+			break;
+		case 14: // Additional HW CMD
+			if (subcmd == 0) { // Get Battery stats
+				f4 = calculateLipoPercentage(this->cl->lastPower.voltage);
+				memcpy(&this->sendData[4*0], &this->cl->lastPower.voltage, sizeof(float));
+				memcpy(&this->sendData[4*1], &this->cl->lastPower.current, sizeof(float));
+				memcpy(&this->sendData[4*2], &this->cl->lastPower.power, sizeof(float));
+				memcpy(&this->sendData[4*3], &f4, sizeof(float));
+				this->sendDataSize = 4*sizeof(float);
+			} else if (subcmd == 1) { // Get IMU data
+				
 			}
 			break;
 		default:

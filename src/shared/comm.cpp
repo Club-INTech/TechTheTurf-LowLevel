@@ -75,6 +75,7 @@ void Comm::resetCmd() {
 }
 
 void Comm::clearTelems() {
+	this->telemIdx = 0;
 	for (size_t i=0; i<MAX_TELEMETRY_NB; i++)
 		this->telems[i] = nullptr;
 }
@@ -85,10 +86,10 @@ TelemetryBase* Comm::getTelem(uint8_t idx) {
 	return this->telems[idx];
 }
 
-void Comm::addTelem(uint8_t idx, TelemetryBase *telem) {
-	if (idx >= MAX_TELEMETRY_NB)
+void Comm::addTelem(TelemetryBase *telem) {
+	if (this->telemIdx >= MAX_TELEMETRY_NB)
 		return;
-	this->telems[idx] = telem;
+	this->telems[this->telemIdx++] = telem;
 }
 
 void Comm::work() {
@@ -119,8 +120,14 @@ bool Comm::handleCmd(uint8_t *data, size_t size) {
 	TelemetryBase* telem;
 
 	switch (cmd) {
-		case 6: // Telem CMD, ON sc=1/OFF sc=0, set downsampling sc=2
-			telem = getTelem(data[0]);
+		case 6: // Telem CMD, ON sc=1/OFF sc=0, set downsampling sc=2, get total count sc=3, get info sc=4
+			if (subcmd == 3) {
+				this->sendData[0] = this->telemIdx;
+				this->sendDataSize = 1;
+				break;
+			}
+
+			telem = getTelem(data[1]);
 			if (!telem)
 				break;
 
@@ -129,7 +136,10 @@ bool Comm::handleCmd(uint8_t *data, size_t size) {
 			else if (subcmd == 0)
 				telem->stop();
 			else if (subcmd == 2)
-				telem->setDownsample(data[1]);
+				telem->setDownsample(data[2]);
+			else if (subcmd == 4) {
+				//this->sendData[0] = 
+			}
 
 			break;
 		default:

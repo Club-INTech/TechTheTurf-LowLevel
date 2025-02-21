@@ -20,7 +20,7 @@ public:
 	void slaveHandler(i2c_slave_event_t event);
 
 	TelemetryBase* getTelem(uint8_t idx);
-	void addTelem(uint8_t idx, TelemetryBase *telem);
+	void addTelem(TelemetryBase *telem);
 	void clearTelems();
 
 	void work();
@@ -36,6 +36,7 @@ protected:
 
 	// Store reference to all telemetries that we have to handle in serial
 	TelemetryBase* telems[MAX_TELEMETRY_NB];
+	uint8_t telemIdx;
 
 	// Temporary buffer for Serial telemetry
 	uint8_t serialBuffer[MAX_DATA_SIZE];

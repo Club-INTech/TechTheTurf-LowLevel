@@ -155,7 +155,7 @@ struct LedRangeCache {
 
 class CachedLedProvider : public LedProvider {
 public:
-	CachedLedProvider(LedProvider &prov);
+	CachedLedProvider(LedProvider *prov);
 
 	void  __attribute__((optimize("O0"))) cacheRange(LedFunction fMask=LedFunction::all, LedPosition pMask=LedPosition::agnostic, bool specific=false)
 			{LedRange __attribute__((unused)) rg = range(fMask, pMask, specific);}
@@ -182,7 +182,7 @@ public:
 private:
 	static uint32_t cacheId(LedFunction fMask, LedPosition pMask=LedPosition::agnostic, bool specific=false);
 
-	LedProvider &prov;
+	LedProvider *prov;
 
 	std::unordered_map<uint32_t, LedRangeCache> cache;
 };

@@ -3,6 +3,7 @@
 WS281XProvider::WS281XProvider(uint8_t ws_pin, uint32_t count, PIO pio, uint8_t sm) : size(count), pixels(ws_pin, count, pio, sm){
 	this->params = new LedParams[count];
 	this->setLedParamsRange(0, count-1, LedFunction::all, LedPosition::agnostic);
+	this->setLedOrderRange(0, count-1, true);
 }
 
 WS281XProvider::~WS281XProvider() {

@@ -8,7 +8,7 @@
 class I2CDevice
 {
 public:
-	I2CDevice(i2c_inst_t *inst, uint8_t sda, uint8_t scl, uint8_t addr, uint baudrate=100e3, bool pullUp=true, bool swapEndian=false, uint timeoutUs=1000);
+	I2CDevice(i2c_inst_t *inst, uint8_t sda, uint8_t scl, uint8_t addr, uint baudrate=100e3, bool pullUp=true, bool swapEndian=false, uint timeoutUs=200);
 	~I2CDevice();
 
 	void setTimeout(uint timeoutUs);

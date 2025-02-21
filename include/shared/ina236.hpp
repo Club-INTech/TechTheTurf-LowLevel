@@ -69,7 +69,7 @@ public:
 	float readShuntVoltage(); // In Volts
 	float readBusVoltage(); // In Volts
 	float readPower(); // In Watts
-	float readCurrent(); // In Amps 
+	float readCurrent(); // In Amps
 
 	// Should return 0x5449 or 'TI'
 	uint16_t readManufacturerID();

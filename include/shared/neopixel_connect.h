@@ -27,10 +27,6 @@
 
 #include <ws2812.pio.h>
 
-#ifndef MAXIMUM_NUM_NEOPIXELS
-#   define MAXIMUM_NUM_NEOPIXELS 128
-#endif
-
 //32..0
 // 0GRB
 // GRB0
@@ -47,18 +43,11 @@ public:
 	/// @brief Constructor
 	/// @param pinNumber: GPIO pin that controls the NeoPixel string.
 	/// @param numberOfPixels: Number of pixels in the string
-	/// @param pio: pio selected - default = pio0. pio1 may be specified
-	/// @param sm: state machine selected. Default = 0
-	NeoPixelConnect(uint8_t pinNumber, uint16_t numberOfPixels);
-
-	/// @brief Constructor
-	/// @param pinNumber: GPIO pin that controls the NeoPixel string.
-	/// @param numberOfPixels: Number of pixels in the string
 	/// This constructor sets pio=pio0 and sm to 0
-	NeoPixelConnect(uint8_t pinNumber, uint16_t numberOfPixels, PIO pio, uint sm);
+	NeoPixelConnect(uint8_t pinNumber, uint16_t numberOfPixels, PIO pio=pio0, uint sm=0);
 
 	/// @brief Destructor
-	virtual ~NeoPixelConnect(){};
+	~NeoPixelConnect();
 
 	///@brief Initialize the class instance after calling constructor
 	/// @param pinNumber: GPIO pin that controls the NeoPixel string.
@@ -192,7 +181,7 @@ private:
 	uint16_t realPixelCnt;
 
 	// a buffer that holds the color for each pixel
-	uint8_t __attribute__ ((aligned (8))) pixelBuffer[MAXIMUM_NUM_NEOPIXELS][4];
+	uint8_t *pixelBuffer;
 };
 
 

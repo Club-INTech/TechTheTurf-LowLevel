@@ -42,6 +42,7 @@ Encoder::Encoder(uint pin_a, uint pin_b, bool reversed, uint state_machine, PIO 
 
 	// start "stopped" so that we don't use stale data to compute speeds
 	this->stopped = 1;
+	this->speed = 0;
 
 	// cache the PIO cycles per us
 	this->clocks_per_us = (clock_get_hz(clk_sys) + 500000) / 1000000;

@@ -162,7 +162,7 @@ uint32_t CachedLedProvider::cacheId(LedFunction fMask, LedPosition pMask, bool s
 	return ((uint32_t)fMask) << 9 | ((uint32_t)pMask) << 1 | (specific & 1);
 }
 
-CachedLedProvider::CachedLedProvider(LedProvider &prov) : prov(prov) {
+CachedLedProvider::CachedLedProvider(LedProvider *prov) : prov(prov) {
 }
 
 void CachedLedProvider::clearCache() {
@@ -188,35 +188,35 @@ LedRange CachedLedProvider::range(LedFunction fMask, LedPosition pMask, bool spe
 }
 
 uint32_t CachedLedProvider::getSize() {
-	return this->prov.getSize();
+	return this->prov->getSize();
 }
 uint32_t CachedLedProvider::getSizeParam(LedFunction fMask, LedPosition pMask, bool specific) {
 	uint32_t id = cacheId(fMask, pMask, specific);
 	if (this->cache.contains(id))
 		return this->cache.at(id).size;
-	return this->prov.getSizeParam(fMask, pMask, specific);
+	return this->prov->getSizeParam(fMask, pMask, specific);
 
 }
 // Affects mask
 void CachedLedProvider::setColorRaw(uint32_t idx, uint32_t rgb, uint8_t brightness) {
-	this->prov.setColorRaw(idx, rgb, brightness);
+	this->prov->setColorRaw(idx, rgb, brightness);
 }
 
 void CachedLedProvider::setLedParams(uint32_t idx, LedFunction func, LedPosition pos) {
-	this->prov.setLedParams(idx, func, pos);
+	this->prov->setLedParams(idx, func, pos);
 }
 
 LedPosition CachedLedProvider::getLedPosition(uint32_t idx) {
-	return this->prov.getLedPosition(idx);
+	return this->prov->getLedPosition(idx);
 }
 LedFunction CachedLedProvider::getLedFunction(uint32_t idx) {
-	return this->prov.getLedFunction(idx);
+	return this->prov->getLedFunction(idx);
 }
 
 void CachedLedProvider::clear() {
-	this->prov.clear();
+	this->prov->clear();
 }
 
 void CachedLedProvider::display() {
-	this->prov.display();
+	this->prov->display();
 }
