@@ -16,7 +16,8 @@ enum class LedFunction : uint16_t {
 	neonLight = 1<<7,
 	fancyBlinker = 1<<8,
 	reverseLight = 1<<9,
-	smokeLight = 1<<10
+	smokeLight = 1<<10,
+	fancyBlinkerFront = 1<<11
 };
 
 enum class LedPosition : uint8_t {

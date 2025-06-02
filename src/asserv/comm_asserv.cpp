@@ -216,6 +216,17 @@ bool CommAsserv::handleCmd(uint8_t *data, size_t size) {
 				} else {
 					this->effects->popup->right->setValue(f2);
 				}
+			} else if (subcmd == 10) { // LDR debug
+				memset(&this->sendData[0], 0, sizeof(float)*2);
+				if (this->effects->ldrExt) {
+					f1 = this->effects->ldrExt->readLux();
+					memcpy(&this->sendData[0], &f1, sizeof(float));
+				}
+				if (this->effects->ldrFront) {
+					f2 = this->effects->ldrFront->readLux();
+					memcpy(&this->sendData[4], &f2, sizeof(float));
+				}
+				this->sendDataSize = 2*sizeof(float);
 			}
 			break;
 		case 14: // Additional HW CMD

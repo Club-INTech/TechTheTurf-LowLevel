@@ -40,9 +40,9 @@
 	#else
 		// Trapezoidal profile for distance & angle
 		// mm/s
-		#define MAX_LIN_VELOCITY 700.0f
+		#define MAX_LIN_VELOCITY 400.0f
 		// mm/s^2
-		#define MAX_LIN_ACCEL 800.0f
+		#define MAX_LIN_ACCEL 200.0f
 		// mm/s^2
 		#define MAX_LIN_ESTOP_ACCEL 2000.0f
 		// rad/s
@@ -55,9 +55,9 @@
 
 	// Tolerances for the controller
 	// mm
-	#define TOLERANCE_DST 20.0f
+	#define TOLERANCE_DST 5.0f
 	// rad
-	#define TOLERANCE_ANGLE (4.0f*(M_PI/180.0f))
+	#define TOLERANCE_ANGLE (1.0f*(M_PI/180.0f))
 
 	// PIDs & PWM Settings
 	#ifdef PAMINABLE
@@ -95,19 +95,19 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define SPEED_PID_KD 0.00005f
 
 		// Dst PID
-		#define DST_PID_KP 20.0f
-		#define DST_PID_KI 1.0f
-		#define DST_PID_KD 0.5f
+		#define DST_PID_KP 75.0f
+		#define DST_PID_KI 10.0f
+		#define DST_PID_KD 2.0f
 		#define DST_PID_CLAMP 3000.0f
 
 		// Angle PID
-		#define ANGLE_PID_KP 1200.0f
-		#define ANGLE_PID_KI 130.0f
-		#define ANGLE_PID_KD 80.0f
+		#define ANGLE_PID_KP 3500.0f
+		#define ANGLE_PID_KI 2500.0f
+		#define ANGLE_PID_KD 200.0f
 		#define ANGLE_PID_CLAMP 100000.0f
 
 		// PWM Driver Settings
-		#define DRIVER_DUTY_OFFSET 0.03f
+		#define DRIVER_DUTY_OFFSET 0.07f
 		// Limit Voltage on smaller motors
 		#define DRIVER_DUTY_CLAMP 0.83f
 	#endif
@@ -128,10 +128,10 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define RIGHT_MOTOR_FW_PIN 2
 		#define RIGHT_MOTOR_RW_PIN 3
 	#else // Pamini
-		#define LEFT_MOTOR_FW_PIN 8
-		#define LEFT_MOTOR_RW_PIN 9
-		#define RIGHT_MOTOR_FW_PIN 10
-		#define RIGHT_MOTOR_RW_PIN 11
+		#define LEFT_MOTOR_FW_PIN 10
+		#define LEFT_MOTOR_RW_PIN 11
+		#define RIGHT_MOTOR_FW_PIN 8
+		#define RIGHT_MOTOR_RW_PIN 9
 	#endif
 
 	#ifdef PAMINABLE
@@ -140,10 +140,10 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define RIGHT_INCREMENTAL_A_PIN 6
 		#define RIGHT_INCREMENTAL_B_PIN 7
 	#else // Pamini
-		#define LEFT_INCREMENTAL_A_PIN 2
-		#define LEFT_INCREMENTAL_B_PIN 3
-		#define RIGHT_INCREMENTAL_A_PIN 4
-		#define RIGHT_INCREMENTAL_B_PIN 5
+		#define LEFT_INCREMENTAL_A_PIN 4
+		#define LEFT_INCREMENTAL_B_PIN 5
+		#define RIGHT_INCREMENTAL_A_PIN 2
+		#define RIGHT_INCREMENTAL_B_PIN 3
 	#endif
 
 	#ifndef PAMINABLE // Pamini
@@ -174,8 +174,13 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		// ADC0
 		#define LDR2_PIN 26
 
+		// LDR Specs
+		#define LDR_COEFF 29650558.519810803f
+		#define LDR_EXPONENT -1.6689369023883385f
+		#define LDR_RESISTOR 10e3
+
 		#define WS2812B1_PIN 6
-		#define WS2812B1_COUNT 4
+		#define WS2812B1_COUNT (2+6)
 		#define WS2812B2_PIN 7
 		#define WS2812B2_COUNT (43+6)
 
@@ -191,14 +196,20 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 		#define SERVO_POPUP_LEFT_PIN SERVO4_PIN
 		#define SERVO_POPUP_RIGHT_PIN SERVO3_PIN
 
+		//#define SERVO_SPOILER_LONG_PIN SERVO3_PIN
+		//#define SERVO_SPOILER_SHORT_PIN SERVO4_PIN
+		//#define SERVO_POPUP_LEFT_PIN SERVO1_PIN
+		//#define SERVO_POPUP_RIGHT_PIN SERVO2_PIN
+
+
 		#define POPUP_CLOSE_ANGLE -0.04
-		#define POPUP_OPEN_ANGLE -0.56
+		#define POPUP_OPEN_ANGLE -0.54
 		#define POPUP_RIGHT_OFFSET -0.01
 
-		#define MAX_SPOILER_H_VEL 50
-		#define MAX_SPOILER_H_ACCEL 5
-		#define MAX_SPOILER_ANG_VEL 2
-		#define MAX_SPOILER_ANG_ACCEL 0.5
+		#define MAX_SPOILER_H_VEL 100
+		#define MAX_SPOILER_H_ACCEL 1000
+		#define MAX_SPOILER_ANG_VEL 50
+		#define MAX_SPOILER_ANG_ACCEL 50
 
 		#define SPOILER_START_H 5
 
@@ -222,7 +233,7 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 	#else
 		// Pamini
 		#define ENCODER_WHEEL_RADIUS (53.754f/2.0f)
-		#define ENCODER_DIST 63.0f
+		#define ENCODER_DIST 59.5f
 
 		#define ENCODER_LEFT_REVERSE false
 		#define ENCODER_RIGHT_REVERSE true
@@ -238,7 +249,7 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 	#define POSITION_DOWNSAMPLING 4
 
 	// Enable to use ODrive, otherwise uses BGs
-	//#define ROBOT_MAIN_ODRIVE
+	#define ROBOT_MAIN_ODRIVE
 
 	// Absolute limits on the motor control
 	// rads/s
@@ -296,8 +307,8 @@ Pid(name='right_vel', idx=3, kp=0.0010000000474974513, ki=0.0, kd=4.999999873689
 	#define BG_RIGHT_ID 1
 
 	// ODrive Motors
-	#define ODRIVE_LEFT_AXIS 0
-	#define ODRIVE_RIGHT_AXIS 1
+	#define ODRIVE_LEFT_AXIS 1
+	#define ODRIVE_RIGHT_AXIS 0
 
 	// Pins
 	#define I2C_SDA 0

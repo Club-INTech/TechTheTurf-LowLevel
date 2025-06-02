@@ -1,5 +1,6 @@
 #pragma  once
 
+#include <shared/ldr.hpp>
 #include <shared/popup.hpp>
 #include <shared/spoiler.hpp>
 #include <asserv/control_loop.hpp>
@@ -36,16 +37,32 @@
 
 #define REVERSE_LIGHT_BRIGHTNESS 60
 
+#define STARTUP_EFFECT
 #define STARTUP_TIME 1.6f
-#define BATTERY_TIME 3.0f
+#define BATTERY_TIME 1.50f
+
+#define POLICE_SLOW_PERIOD 0.18f
+#define POLICE_FAST_PERIOD 0.08f
+#define POLICE_SLOW_COUNT 8
+#define POLICE_FAST_COUNT 12
+
+#define DAYLIGHT_BRIGHT 65
 
 #define DISCO_TIME 5
+
+#define LIGHT_WAIT_TIME 1.5
+#define LIGHT_BLIND_WAIT_TIME 0.2
+#define LUX_BRIGHTS_LEVEL 3
+#define LUX_CRUISE_LEVEL 10
+#define LUX_BLINDING_LEVEL 30
 
 enum class ControlState {
 	off = 0,
 	automatic,
 	manual,
-	gay
+	gay,
+	police,
+	show
 };
 
 enum class BlinkerState {
@@ -68,7 +85,6 @@ enum class RingState {
 	speed,
 	chase,
 	wiper,
-	police,
 	battery
 };
 
@@ -79,7 +95,7 @@ static inline float convertLight(char val) {
 class Effects
 {
 public:
-	Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoiler, PopUp *popup);
+	Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoiler, PopUp *popup, LDR *ldrExt, LDR *ldrFront);
 	~Effects();
 
 	void setControlState(ControlState state) {
@@ -116,6 +132,7 @@ public:
 	Piezo *piezo;
 	Spoiler *spoiler;
 	PopUp *popup;
+	LDR *ldrExt, *ldrFront;
 private:
 	ControlLoop *cl;
 	absolute_time_t lastTime;
@@ -125,10 +142,12 @@ private:
 	size_t wiperState;
 	size_t smokeIdx;
 	size_t smokeLen;
+	bool policeSide;
+	bool policeFast;
 
 	ControlState controlState;
 	BlinkerState blinkers;
-	HeadlightState headlights;
+	HeadlightState headlights, nextHeadlights;
 	RingState ringState;
 	bool stopping;
 	bool stopCenter;
@@ -137,6 +156,9 @@ private:
 	bool smoking;
 	float leftPop, rightPop;
 
+	float showTimer;
+	float headlightsTimer;
+	float headlightsBlindTimer;
 	float discoTimer;
 	float blinkerTimer;
 	float fancyBlinkerTimer;

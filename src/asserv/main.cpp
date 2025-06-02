@@ -23,6 +23,7 @@
 #include <shared/spoiler.hpp>
 #include <shared/popup.hpp>
 #include <shared/ina236.hpp>
+#include <shared/ldr.hpp>
 #if defined(ROBOT_PAMI) && defined(PAMINI)
 #include <Invn/icm42688.hpp>
 #endif
@@ -66,8 +67,8 @@ int main() {
 #endif
 
 	// Init Encoders
-	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, ENCODER_LEFT_REVERSE, 0);
-	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, ENCODER_RIGHT_REVERSE, 1);
+	Encoder *lEnc = new Encoder(LEFT_INCREMENTAL_A_PIN, LEFT_INCREMENTAL_B_PIN, ENCODER_LEFT_REVERSE, 0, pio0, 4096);
+	Encoder *rEnc = new Encoder(RIGHT_INCREMENTAL_A_PIN, RIGHT_INCREMENTAL_B_PIN, ENCODER_RIGHT_REVERSE, 1, pio0, 4096);
 
 	// Init Motor Drivers
 #ifdef ROBOT_MAIN
@@ -159,6 +160,8 @@ int main() {
 	Piezo *piezo = nullptr;
 	Spoiler *spoiler = nullptr;
 	PopUp *popup = nullptr;
+	LDR *ldrExt = nullptr;
+	LDR *ldrFront = nullptr;
 
 #ifdef PAMINI // Pamini
 	// Piezo setup
@@ -182,13 +185,13 @@ int main() {
 	// Leds setup
 	WS281XProvider *strip1 = new WS281XProvider(WS2812B1_PIN, WS2812B1_COUNT, pio1, 0);
 
-	strip1->setLedParams(2, LedFunction::blinker, LedPosition::right | LedPosition::front);
-	strip1->setLedParams(1, LedFunction::blinker, LedPosition::left | LedPosition::front);
+	strip1->setLedParamsRange(4, 6, LedFunction::fancyBlinkerFront, LedPosition::left | LedPosition::front);
+	strip1->setLedParamsRange(1, 3, LedFunction::fancyBlinkerFront, LedPosition::right | LedPosition::front);
 
-	strip1->setLedParams(3, LedFunction::headlight, LedPosition::right | LedPosition::front);
+	strip1->setLedParams(7, LedFunction::headlight, LedPosition::right | LedPosition::front);
 	strip1->setLedParams(0, LedFunction::headlight, LedPosition::left | LedPosition::front);
 
-	strip1->setLedOrderRange(0, 3, false);  // RGB on WS2811 (singluar LEDs)
+	strip1->setLedOrderRange(0, 7, false);  // RGB on WS2811 (singluar LEDs)
 
 	WS281XProvider *strip2 = new WS281XProvider(WS2812B2_PIN, WS2812B2_COUNT, pio1, 1);
 
@@ -198,10 +201,10 @@ int main() {
 	strip2->setLedParams(2, LedFunction::smokeLight, LedPosition::center | LedPosition::rear);
 
 	strip2->setLedParams(1, LedFunction::blinker, LedPosition::right | LedPosition::rear);
-	strip2->setLedParams(WS2812B2_COUNT-1, LedFunction::blinker, LedPosition::left | LedPosition::rear);
+	strip2->setLedParams(WS2812B2_COUNT-2, LedFunction::blinker, LedPosition::left | LedPosition::rear);
 
 	strip2->setLedParams(0, LedFunction::brakeLight | LedFunction::reverseLight, LedPosition::right | LedPosition::rear);
-	strip2->setLedParams(WS2812B2_COUNT-2, LedFunction::brakeLight, LedPosition::left | LedPosition::rear);
+	strip2->setLedParams(WS2812B2_COUNT-1, LedFunction::brakeLight, LedPosition::left | LedPosition::rear);
 
 	strip2->setLedParamsRange(4, WS2812B2_COUNT-3, LedFunction::ringLight, LedPosition::center);
 	strip2->setLedParamsRange(23-4, 35-4, LedFunction::ringLight, LedPosition::front);
@@ -215,6 +218,9 @@ int main() {
 
 	leds->addProvider(strip1);
 	leds->addProvider(strip2);
+
+	ldrExt = new LDR(LDR2_PIN, LDR_RESISTOR, LDR_COEFF, LDR_EXPONENT);
+	ldrFront = new LDR(LDR1_PIN, LDR_RESISTOR, LDR_COEFF, LDR_EXPONENT);
 #endif
 
 	CachedLedProvider *cachedLeds = new CachedLedProvider(leds);
@@ -233,7 +239,7 @@ int main() {
 	cachedLeds->cacheRange(LedFunction::all ^ LedFunction::ringLight, LedPosition::right);
 	cachedLeds->cacheRange(LedFunction::ringLight, LedPosition::front, true);
 
-	Effects *effects = new Effects(cl, (LedProvider*)cachedLeds, piezo, spoiler, popup);
+	Effects *effects = new Effects(cl, (LedProvider*)cachedLeds, piezo, spoiler, popup, ldrExt, ldrFront);
 #endif
 	// Init motor control
 	multicore_launch_core1(comm_thread);

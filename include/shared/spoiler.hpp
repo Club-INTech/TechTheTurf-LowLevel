@@ -18,6 +18,8 @@ public:
 	void work(float dt);
 
 private:
+	void setServos(float height, float ang);
+
 	Servo *longSrv,*shortSrv;
 
 	bool centered;

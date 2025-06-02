@@ -14,6 +14,7 @@ Spoiler::Spoiler(Servo *longServo, Servo *shortServo, SpeedProfile *spoilerHeigh
 	this->newAngleTarget = 0;
 	this->heightSp->reset();
 	this->angleSp->reset();
+	setServos(this->hTarget, this->angleTarget);
 }
 
 Spoiler::~Spoiler() {
@@ -48,21 +49,7 @@ void Spoiler::centerServos() {
 	this->angleSp->reset();
 }
 
-void Spoiler::work(float dt) {
-	if (this->centered)
-		return;
-
-	if (this->finished())
-		return;
-
-	float ang = this->angleTarget + this->angleSp->process(dt);
-	float height = this->hTarget + this->heightSp->process(dt);
-
-	if (this->finished()) {
-		this->hTarget = this->newHTarget;
-		this->angleTarget = this->newAngleTarget;
-	}
-
+void Spoiler::setServos(float height, float ang) {
 	// Shout out to Loic the GOAT for this
 	//float longAng = std::fmod(0.0f,2.0f*M_PI);
 	float longAng = std::asin(height / this->l1);
@@ -78,5 +65,23 @@ void Spoiler::work(float dt) {
 	this->shortSrv->setValue(sval);
 	this->longSrv->setValue(lval);
 
-	printf("s=%f l=%f, h=%f ang=%f\n", sval, lval, height, ang);
+	//printf("s=%f l=%f, h=%f ang=%f\n", sval, lval, height, ang);
+}
+
+void Spoiler::work(float dt) {
+	if (this->centered)
+		return;
+
+	if (this->finished())
+		return;
+
+	float ang = this->angleTarget + this->angleSp->process(dt);
+	float height = this->hTarget + this->heightSp->process(dt);
+
+	if (this->finished()) {
+		this->hTarget = this->newHTarget;
+		this->angleTarget = this->newAngleTarget;
+	}
+
+	setServos(height, ang);
 }

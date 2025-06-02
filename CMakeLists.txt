@@ -51,10 +51,11 @@ target_sources(ll_common INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/comm.
                                     "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/led_provider.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ws281x_provider.cpp"
                                     "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/piezo.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/servo.cpp"
                                     "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/spoiler.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/i2c_device.cpp"
-                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ina236.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/popup.cpp")
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ina236.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/popup.cpp"
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/ldr.cpp")
 
 # Linked libs
-target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio hardware_pwm hardware_dma)
+target_link_libraries(ll_common INTERFACE pico_i2c_slave pico_stdlib pico_rand pico_multicore pico_sync hardware_i2c hardware_pio hardware_pwm hardware_dma hardware_adc)
 
 # Shared library to all pico asserv FW
 add_library(ll_common_asserv INTERFACE)
@@ -69,6 +70,7 @@ target_link_libraries(ll_common_asserv INTERFACE ll_common hardware_pio)
 
 # PIO header gen.
 pico_generate_pio_header(ll_common_asserv ${CMAKE_CURRENT_LIST_DIR}/pio/quadrature_encoder_substep.pio)
+#pico_generate_pio_header(ll_common_asserv ${CMAKE_CURRENT_LIST_DIR}/pio/quadrature_encoder.pio)
 
 # Shared library to all pico asserv FW
 add_library(dynamixel_sdk INTERFACE)

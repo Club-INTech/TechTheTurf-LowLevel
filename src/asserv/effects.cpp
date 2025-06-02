@@ -11,15 +11,17 @@
 #include <asserv/effects.hpp>
 #include <cmath>
 #include <cstdint>
+#include <math.h>
 #include <hardware/timer.h>
 
-Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoiler, PopUp *popup)
- : leds(prov), piezo(piezo), spoiler(spoiler), popup(popup), cl(cl)  {
+Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoiler, PopUp *popup, LDR *ldrExt, LDR *ldrFront)
+ : leds(prov), piezo(piezo), spoiler(spoiler), popup(popup), ldrExt(ldrExt), ldrFront(ldrFront), cl(cl)  {
 	this->lastTime = get_absolute_time();
 
 	this->controlState = ControlState::automatic;
 	this->blinkers = BlinkerState::off;
 	this->headlights = HeadlightState::off;
+	this->nextHeadlights = HeadlightState::off;
 	this->ringState = RingState::off;
 	this->ringDisco = false;
 	this->stopping = false;
@@ -34,7 +36,12 @@ Effects::Effects(ControlLoop *cl, LedProvider* prov, Piezo* piezo, Spoiler *spoi
 	this->wiperState = 0;
 	this->smokeIdx = 0;
 	this->smokeLen = std::strlen(PIEZO_FIRE_STR);
+	this->policeSide = false;
+	this->policeFast = false;
 
+	this->showTimer = 0;
+	this->headlightsTimer = 0;
+	this->headlightsBlindTimer = 0;
 	this->discoTimer = 0;
 	this->centerTimer = 0;
 	this->fancyBlinkerTimer = 0;
@@ -51,6 +58,7 @@ void Effects::work() {
 	float dt = ((float)absolute_time_diff_us(this->lastTime, time))/((float)1e6);
 	this->lastTime = time;
 
+#ifdef STARTUP_EFFECT
 	if (this->startupTimer <= STARTUP_TIME+BATTERY_TIME) {
 		if (this->startupTimer == 0.0f) {
 			this->popup->setOpen(true);
@@ -100,6 +108,7 @@ void Effects::work() {
 		this->leds->display();
 		return;
 	}
+#endif
 
 	// If we're not controlled, still display
 	if (this->controlState == ControlState::off) {
@@ -134,21 +143,86 @@ void Effects::work() {
 
 		this->reversing = this->cl->running && reversing;
 		this->stopping = this->cl->running && braking;
-		this->headlights = HeadlightState::off;
+
+		//this->headlights = HeadlightState::off;
+		if (this->ldrExt || this->ldrFront) {
+			float extLux = this->ldrExt ? this->ldrExt->readLux() : 1000.0f;
+			float frontLux = this->ldrFront ? this->ldrFront->readLux() : 0.0f;
+			static bool isBlinded = false;
+
+			HeadlightState nxt = HeadlightState::off;
+			if (extLux <= LUX_BRIGHTS_LEVEL) {
+				nxt = HeadlightState::full;
+			} else if (extLux <= LUX_CRUISE_LEVEL) {
+				nxt = HeadlightState::dim;
+			}
+
+			if (frontLux >= LUX_BLINDING_LEVEL && !isBlinded) {
+				this->headlightsBlindTimer += dt;
+				if (this->headlightsBlindTimer >= LIGHT_BLIND_WAIT_TIME) {
+					isBlinded = true;
+					this->headlightsBlindTimer = 0;
+				}
+			} else if (frontLux < LUX_BLINDING_LEVEL && isBlinded) {
+				this->headlightsBlindTimer += dt;
+				if (this->headlightsBlindTimer >= LIGHT_WAIT_TIME) {
+					isBlinded = false;
+					this->headlightsBlindTimer = 0;
+				}
+			}
+
+			if (nxt == this->nextHeadlights) {
+				this->headlightsTimer += dt;
+			} else {
+				this->headlightsTimer = 0;
+				this->nextHeadlights = nxt;
+			}
+
+			bool isSame = this->nextHeadlights != this->headlights;
+			if (isBlinded && !isSame) {
+				if (this->headlights == HeadlightState::dim && this->nextHeadlights == HeadlightState::full)
+					isSame = true;
+			}
+
+			if (isBlinded && this->headlights == HeadlightState::full)
+				this->headlights = HeadlightState::dim;
+
+			if (isSame && this->headlightsTimer >= LIGHT_WAIT_TIME) {
+				if (isBlinded && this->nextHeadlights == HeadlightState::full)
+					this->headlights = HeadlightState::dim; 
+				else
+					this->headlights = this->nextHeadlights;
+				this->headlightsTimer = 0;
+			}
+		}
 
 		this->stopCenter = this->cl->running;
 		this->smoking = this->cl->running && cState == ControllerState::reachedTarget;
 
-		float pop = (this->headlights != HeadlightState::off || this->controlState == ControlState::gay) ? 1 : 0;
+		float pop = (this->headlights != HeadlightState::off) ? 1 : 0;
 		this->leftPop = pop;
 		this->rightPop = pop;
+	} else if (this->controlState == ControlState::show) {
+		this->ringState = RingState::rainbow;
+		this->smoking = true;
+		this->headlights = HeadlightState::full;
+		this->blinkers = BlinkerState::warning;
+		float cos = std::cosf(this->showTimer);
+		this->leftPop = (cos+1)/2.0f;
+		this->rightPop = 1-(cos+1)/2.0f;
+		this->showTimer += dt*4.3;
+		if (this->showTimer >= 2*M_PI)
+			this->showTimer = 0;
 	}
 
 	// Apply effects from states
 
 	// Pop up Headlights
 	if (this->popup != nullptr) {
-		this->popup->setPop(this->leftPop, this->rightPop);
+		if (this->controlState == ControlState::police || this->controlState == ControlState::gay)
+			this->popup->setPop(1.0f, 1.0f);
+		else
+			this->popup->setPop(this->leftPop, this->rightPop);
 	}
 
 	// Spoiler
@@ -180,103 +254,131 @@ void Effects::work() {
 		return;
 
 	// Ring effects
-	if (this->leds->getSizeParam(LedFunction::ringLight) > 0) {
-		float speedDir = std::signbit(this->cl->rCurrentSpeed) ? -1.0f : 1.0f;
-		float speed = (std::fabs(this->cl->lCurrentSpeed) + std::fabs(this->cl->rCurrentSpeed))/2.0f;
-		float rainbowPeriod = this->ringState == RingState::speed ? std::clamp(1.0f/speed, 4e-3f, 32e-3f) : 16e-3f;
+	float speedDir = std::signbit(this->cl->rCurrentSpeed) ? -1.0f : 1.0f;
+	float speed = (std::fabs(this->cl->lCurrentSpeed) + std::fabs(this->cl->rCurrentSpeed))/2.0f;
+	float rainbowPeriod = this->ringState == RingState::speed ? std::clamp(1.0f/speed, 4e-3f, 32e-3f) : 16e-3f;
 
-		if (this->controlState != ControlState::gay && this->ringState == RingState::off) {
-			// Turn off the ring
-			this->leds->setColor(0x0, 0x0, LedFunction::ringLight);
-		} else if (this->ringState == RingState::rainbow || this->ringState == RingState::speed || this->controlState == ControlState::gay) {
-			if (this->ringTimer >= rainbowPeriod) {
-				// Ring rainbow + Gay mode
-				if (this->firstPixelHue >= 5*65536)
-					this->firstPixelHue = 0;
+	if ((this->controlState != ControlState::gay && this->controlState != ControlState::police) && this->ringState == RingState::off) {
+		// Turn off the ring
+		this->leds->setColor(0x0, 0x0, LedFunction::ringLight);
+	} else if (this->ringState == RingState::rainbow || this->ringState == RingState::speed || this->controlState == ControlState::gay) {
+		if (this->ringTimer >= rainbowPeriod) {
+			// Ring rainbow + Gay mode
+			if (this->firstPixelHue >= 5*65536)
+				this->firstPixelHue = 0;
 
-				LedFunction lfunc = this->controlState == ControlState::gay ? LedFunction::all : LedFunction::ringLight;
+			LedFunction lfunc = this->controlState == ControlState::gay ? LedFunction::all : LedFunction::ringLight;
 
-				uint32_t ringSize = this->leds->getSizeParam(lfunc);
-				uint32_t i=0;
-				for (uint32_t idx : this->leds->range(lfunc)) {
-					int pixelHue = this->firstPixelHue + (i * 65536L / ringSize);
-					this->leds->setColorRaw(idx, NeoPixelConnect::ColorHSV(pixelHue), this->controlState == ControlState::gay ? RING_BRIGHTNESS : RING_BRIGHTNESS_DIM);
-					i++;
-				}
-				this->firstPixelHue += this->ringState == RingState::speed ? 256*speedDir : 256;
-				this->ringTimer = 0;
-			}
-		} else if (this->ringState == RingState::chase && this->ringTimer >= rainbowPeriod) {
-			// Chase mode
-			uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
-			uint32_t i = 0;
-			for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
-				if (i == this->chaseOffset)
-					this->leds->setColorRaw(idx, INTECH_BLUE, RING_BRIGHTNESS);
-				else if (i == (this->chaseOffset + ringSize/2) % ringSize)
-					this->leds->setColorRaw(idx, INTECH_YELLOW, RING_BRIGHTNESS);
-				else
-					this->leds->setColorRaw(idx, 0, 0);
+			uint32_t ringSize = this->leds->getSizeParam(lfunc);
+			uint32_t i=0;
+			for (uint32_t idx : this->leds->range(lfunc)) {
+				int pixelHue = this->firstPixelHue + (i * 65536L / ringSize);
+				this->leds->setColorRaw(idx, NeoPixelConnect::ColorHSV(pixelHue), this->controlState == ControlState::gay ? RING_BRIGHTNESS : RING_BRIGHTNESS_DIM);
 				i++;
 			}
-			this->chaseOffset++;
-			this->chaseOffset %= ringSize;
+			this->firstPixelHue += this->ringState == RingState::speed ? 256*speedDir : 256;
 			this->ringTimer = 0;
-		} else if (this->ringState == RingState::wiper && this->ringTimer >= rainbowPeriod) {
-			// Wiper mode
-			uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
-			uint32_t i = 0;
-			for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
-				if (i == this->chaseOffset)
-					this->leds->setColorRaw(idx, this->wiperState == 0 ? INTECH_BLUE : INTECH_YELLOW, RING_BRIGHTNESS);
-				i++;
-			}
-			this->chaseOffset++;
-			if (this->chaseOffset >= ringSize) {
-				this->chaseOffset = 0;
-				this->wiperState = (this->wiperState+1)%2;
-			}
-			this->ringTimer = 0;
-		} else if (this->ringState == RingState::police && this->ringTimer >= rainbowPeriod) {
+		}
+	} else if (this->controlState == ControlState::police) {
+		if (this->ringTimer >= (this->policeFast ? POLICE_FAST_PERIOD : POLICE_SLOW_PERIOD)) {
 			// Police mode
+			this->chaseOffset++;
+			if (this->policeFast) {
+				if (this->chaseOffset > POLICE_FAST_COUNT) {
+					this->chaseOffset = 0;
+					this->policeFast = false;
+					this->policeSide ^= true;
+				} else {
+					this->policeSide = this->chaseOffset <= POLICE_FAST_COUNT/2;
+				}
+			} else {
+				if (this->chaseOffset > POLICE_SLOW_COUNT) {
+					this->chaseOffset = 0;
+					this->policeFast = true;
+					this->policeSide ^= true;
+				} else {
+					this->policeSide = this->chaseOffset % 2 == 0;
+				}
+			}
+
 			uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
 			uint32_t i = 0;
+			uint8_t bright = this->policeFast ? this->chaseOffset % 2 == 0 ? RING_BRIGHTNESS : 0 : RING_BRIGHTNESS;
+			uint8_t blueSideBright = this->policeSide ? bright : 0;
+			uint8_t redSideBright = this->policeSide ? 0 : bright;
 			for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
 				if (i >= ringSize/2)
-					this->leds->setColorRaw(idx, 0x0000FF, RING_BRIGHTNESS);
+					this->leds->setColorRaw(idx, 0x0000FF, blueSideBright);
 				else
-					this->leds->setColorRaw(idx, 0xFF0000, RING_BRIGHTNESS);
+					this->leds->setColorRaw(idx, 0xFF0000, redSideBright);
 				i++;
 			}
-			if (this->ringTimer >= rainbowPeriod)
-				this->ringTimer = 0;
-		} else if (this->ringState == RingState::battery) {
-			// Battery mode
-			uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
-			float curr = std::clamp((this->cl->lastPower.current-0.040f)/0.5f, 0.0f, 1.0f); 
-			float batt = std::clamp(calculateLipoPercentage(this->cl->lastPower.voltage)/100.0f, 0.0f, 1.0f);
-			uint32_t color = colorLerp(colorLerp(0x00FF00, 0xFFFF00, curr), colorLerp(0xFFFF00, 0xFF0000, curr), curr);
-			float maxSizeflt = ringSize*batt;
-			uint32_t maxSize = maxSizeflt;
-			maxSizeflt -= maxSize;
-			uint32_t i = 0;
-			for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
-				if (i == maxSize)
-					this->leds->setColorRaw(idx, color, std::lerp(RING_BATT_BRIGHTNESS_DIM, RING_BRIGHTNESS, maxSizeflt));
-				else if (i < maxSize)
-					this->leds->setColorRaw(idx, color, RING_BRIGHTNESS);
-				else
-					this->leds->setColorRaw(idx, color, RING_BATT_BRIGHTNESS_DIM);
-				i++;
-			}
+			this->leds->setColor(0x0000FF, blueSideBright, LedFunction::fancyBlinkerFront, LedPosition::right);
+			this->leds->setColor(0xFF0000, redSideBright, LedFunction::fancyBlinkerFront, LedPosition::left);
+
+			this->leds->setColor(0x0000FF, blueSideBright, LedFunction::blinker, LedPosition::right);
+			this->leds->setColor(0xFF0000, redSideBright, LedFunction::blinker, LedPosition::left);
+
+			this->leds->setColor(HEADLIGHTS_RGB, this->chaseOffset%2 == 0 ? 255 : 0, LedFunction::headlight);
+			this->ringTimer = 0;
 		}
-		this->ringTimer += dt;
+	} else if (this->ringState == RingState::chase && this->ringTimer >= rainbowPeriod) {
+		// Chase mode
+		uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		uint32_t i = 0;
+		for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
+			if (i == this->chaseOffset)
+				this->leds->setColorRaw(idx, INTECH_BLUE, RING_BRIGHTNESS);
+			else if (i == (this->chaseOffset + ringSize/2) % ringSize)
+				this->leds->setColorRaw(idx, INTECH_YELLOW, RING_BRIGHTNESS);
+			else
+				this->leds->setColorRaw(idx, 0, 0);
+			i++;
+		}
+		this->chaseOffset++;
+		this->chaseOffset %= ringSize;
+		this->ringTimer = 0;
+	} else if (this->ringState == RingState::wiper && this->ringTimer >= rainbowPeriod) {
+		// Wiper mode
+		uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		uint32_t i = 0;
+		for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
+			if (i == this->chaseOffset)
+				this->leds->setColorRaw(idx, this->wiperState == 0 ? INTECH_BLUE : INTECH_YELLOW, RING_BRIGHTNESS);
+			i++;
+		}
+		this->chaseOffset++;
+		if (this->chaseOffset >= ringSize) {
+			this->chaseOffset = 0;
+			this->wiperState = (this->wiperState+1)%2;
+		}
+		this->ringTimer = 0;
+	} else if (this->ringState == RingState::battery) {
+		// Battery mode
+		uint32_t ringSize = this->leds->getSizeParam(LedFunction::ringLight);
+		float curr = std::clamp((this->cl->lastPower.current-0.040f)/0.5f, 0.0f, 1.0f); 
+		float batt = std::clamp(calculateLipoPercentage(this->cl->lastPower.voltage)/100.0f, 0.0f, 1.0f);
+		uint32_t color = colorLerp(colorLerp(0x00FF00, 0xFFFF00, curr), colorLerp(0xFFFF00, 0xFF0000, curr), curr);
+		float maxSizeflt = ringSize*batt;
+		uint32_t maxSize = maxSizeflt;
+		maxSizeflt -= maxSize;
+		uint32_t i = 0;
+		for (uint32_t idx : this->leds->range(LedFunction::ringLight)) {
+			if (i == maxSize)
+				this->leds->setColorRaw(idx, color, std::lerp(RING_BATT_BRIGHTNESS_DIM, RING_BRIGHTNESS, maxSizeflt));
+			else if (i < maxSize)
+				this->leds->setColorRaw(idx, color, RING_BRIGHTNESS);
+			else
+				this->leds->setColorRaw(idx, color, RING_BATT_BRIGHTNESS_DIM);
+			i++;
+		}
 	}
+	this->ringTimer += dt;
 
 	// Only apply other effects if we're in a "normal" control mode
 	if (this->controlState != ControlState::gay) {
 		// Fancy blinkers animation...
-		if (this->leds->getSizeParam(LedFunction::fancyBlinker) > 0) {
+		if (this->leds->getSizeParam(LedFunction::fancyBlinker) > 0 && this->controlState != ControlState::police) {
 			float period = (this->blinkers == BlinkerState::estop ? BLINKER_PERIOD/2.0f : BLINKER_PERIOD);
 			uint32_t blinkerSize = this->leds->getSizeParam(LedFunction::fancyBlinker, LedPosition::right);
 			float blinkerProgress = std::clamp(this->blinkerTimer / (period*0.5f), 0.0f, 1.0f);
@@ -300,8 +402,37 @@ void Effects::work() {
 			}
 		}
 
+		// Front Fancy blinkers animation...
+		if (this->leds->getSizeParam(LedFunction::fancyBlinkerFront) > 0 && this->controlState != ControlState::police) {
+			float period = (this->blinkers == BlinkerState::estop ? BLINKER_PERIOD/2.0f : BLINKER_PERIOD);
+			uint32_t blinkerSize = this->leds->getSizeParam(LedFunction::fancyBlinkerFront, LedPosition::right);
+			float blinkerProgress = std::clamp(this->blinkerTimer / (period*0.5f), 0.0f, 1.0f);
+			uint32_t blinkerCurrentPos = std::min(std::floor(blinkerProgress * ((float)blinkerSize)), (float)blinkerSize-1);
+			float maxLedProgress = (1.0f/((float)blinkerSize));
+			uint8_t blinkerBrightness = 255*((blinkerProgress - maxLedProgress*blinkerCurrentPos)/maxLedProgress);
+			if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::left) {
+				uint32_t idx = 0;
+				for (uint32_t pos : this->leds->range(LedFunction::fancyBlinkerFront, LedPosition::right)) {
+					this->leds->setColorRaw(pos, BLINKER_RGB, this->blinkerTimer <= period ? idx > blinkerCurrentPos ? 0 : idx == blinkerCurrentPos ? blinkerBrightness : 255 : 0);
+					idx++;
+				}
+			} else {
+				this->leds->setColor(0xFFFFFF, this->headlights == HeadlightState::off ? DAYLIGHT_BRIGHT : 0, LedFunction::fancyBlinkerFront, LedPosition::right);
+			}
+			//blinkerCurrentPos = blinkerSize-1-blinkerCurrentPos;
+			if (this->blinkers != BlinkerState::off && this->blinkers != BlinkerState::right) {
+				uint32_t idx = 0;
+				for (uint32_t pos : this->leds->range(LedFunction::fancyBlinkerFront, LedPosition::left)) {
+					this->leds->setColorRaw(pos, BLINKER_RGB, this->blinkerTimer <= period ? idx > blinkerCurrentPos ? 0 : idx == blinkerCurrentPos ? blinkerBrightness : 255 : 0);
+					idx++;                                  
+				}
+			} else {
+				this->leds->setColor(0xFFFFFF, this->headlights == HeadlightState::off ? DAYLIGHT_BRIGHT : 0, LedFunction::fancyBlinkerFront, LedPosition::left);
+			}
+		}
+
 		// Normal blinkers
-		if (this->leds->getSizeParam(LedFunction::blinker) > 0) {
+		if (this->leds->getSizeParam(LedFunction::blinker) > 0 && this->controlState != ControlState::police) {
 			uint32_t rgb;
 			switch (this->blinkers) {
 				case BlinkerState::off:
@@ -343,25 +474,22 @@ void Effects::work() {
 		if (this->leds->getSizeParam(LedFunction::brakeLight) > 0) {
 			if (this->stopping) {
 				this->leds->setColor(BRAKE_RGB, 255, LedFunction::brakeLight, LedPosition::rear);
-				//pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 255);
 			} else {
 				this->leds->setColor(BRAKE_RGB, this->headlights == HeadlightState::off ? 0 : BRAKE_DIM, LedFunction::brakeLight, LedPosition::rear);
 
 				if (this->stopCenter) {
 					this->leds->setColor(BRAKE_RGB, this->centerTimer <= CENTER_PERIOD/2.0f ? CENTER_DIM : 0, LedFunction::brakeLight, LedPosition::rear | LedPosition::center, true);
-					//pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), this->centerTimer <= CENTER_PERIOD/2.0f ? CENTER_DIM : 0);
 					this->centerTimer += dt;
 					if (this->centerTimer >= CENTER_PERIOD)
 						this->centerTimer = 0;
 				} else {
 					this->leds->setColor(BRAKE_RGB, 0, LedFunction::brakeLight, LedPosition::rear | LedPosition::center, true);
-					//pwm_set_chan_level(pwm_gpio_to_slice_num(this->center_brake_pin), pwm_gpio_to_channel(this->center_brake_pin), 0);
 					this->centerTimer = 0;
 				}
 			}
 		}
 
-		if (this->leds->getSizeParam(LedFunction::headlight) > 0)
+		if (this->leds->getSizeParam(LedFunction::headlight) > 0 && this->controlState != ControlState::police)
 			this->leds->setColor(this->headlights == HeadlightState::full ? HEADLIGHTS_RGB : HEADLIGHTS_DIM_RGB,
 				this->headlights == HeadlightState::off ? 0 : this->headlights == HeadlightState::full ? 255 : HEADLIGHTS_DIM, LedFunction::headlight);
 
